@@ -1,0 +1,685 @@
+/* Content-positioning CSS for HomePage (mounted at /). The shared frame
+   chrome itself (App Canvas, World Container, Broken Frame decoration,
+   its decoration-thinning variant) lives in WorldFrame's own module.
+   .battleStatusAnchor/.commandAnchor below are battle-phase anchors
+   private to this page. */
+
+/* ---------- intro grid ---------- */
+
+/* Deliberately NO height/min-height override here — the World Container
+   keeps its own default sizing (height: min(82vh,880px); min-height:640px)
+   through the intro exactly as it does through battle, so the frame itself
+   never resizes across the handoff (that resize was its own source of
+   non-seamlessness, independent of the actor's own position/size tween).
+   .introGrid instead stretches to fill whatever height the (now-constant)
+   World Container actually has and centers its own content within that. */
+.introGrid {
+  position: relative;
+  /* Own stacking context so ::before below can sit at z-index:-1 *within
+     this element* (behind every grid item) without being compared against
+     the World Container's own WorldDecoration (also z-index:-1, one level
+     up) — same isolation:isolate + negative-z-index-child pattern used
+     there. */
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  grid-template-areas: 'title creature' 'copy creature' 'action creature';
+  column-gap: clamp(24px, 4vw, 64px);
+  align-content: center;
+  height: 100%;
+  /* The World Container has no padding of its own (the battle phase's
+     absolutely-positioned anchors each bake their own left/right inset
+     into their own position instead) — so normal-flow content here needs
+     its own horizontal breathing room, or it runs edge to edge. Roughly
+     matches those anchors' own insets. */
+  padding: 8px clamp(20px, 5%, 56px) 28px;
+}
+
+/* Intro-only background (Shibuya scramble crossing line art, generated
+   over OSM — credited via WorldFrame's `note` prop). The source export is
+   an opaque white PNG, so mix-blend-mode:multiply blends its white into
+   --color-paper, and a radial mask-image fades its edges. Centered on the
+   creature dock (right side) so the title/copy column (left) stays
+   naturally lighter and legible. A dedicated ::before (not a blend-mode on
+   .introGrid itself) so the blend never reaches the heading/button's own
+   text. */
+.introGrid::before {
+  content: '';
+  /* Inset off the World Container's own top/left edge (not full inset:0)
+     so the shared frame's hairline top edge and corner-cut mark — both
+     painted behind this at z-index:-1 one level up — aren't fully papered
+     over by this layer and the ::after plate below it. */
+  position: absolute;
+  inset: 22px 0 0 44px;
+  z-index: -1;
+  background-image: url('/backgrounds/shibuya-scramble.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  mix-blend-mode: multiply;
+  /* Softened well past what multiply alone does — this is scenery telling
+     you where タ・イクツ stands, not a second subject competing with the
+     headline/body/button for attention. */
+  opacity: 0.32;
+  mask-image: radial-gradient(ellipse 70% 75% at 74% 50%, #000 0%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 75% at 74% 50%,
+    #000 0%,
+    #000 30%,
+    transparent 75%
+  );
+  pointer-events: none;
+}
+
+/* Paper "backdrop plate" behind the title/copy/action column — the mask
+   above only fades the image gradually, which isn't a guarantee against
+   dark linework landing under near-black UI text (and background-size:
+   cover's crop point shifts with viewport aspect). This flatly restores
+   --color-paper behind the text column so legibility never depends on
+   where the image happens to be light, while the cityscape stays fully
+   visible around the creature dock. */
+.introGrid::after {
+  content: '';
+  position: absolute;
+  inset: 22px 0 0 44px;
+  z-index: -1;
+  /* Two layers: a soft patch under the creature column's own caption
+     (kicker + name sit below the dock, past the image mask's own fade-out
+     radius) painted over the existing left-column plate. */
+  background:
+    radial-gradient(
+      ellipse 28% 12% at 75% 73%,
+      var(--color-paper) 0%,
+      var(--color-paper) 55%,
+      transparent 100%
+    ),
+    linear-gradient(to right, var(--color-paper) 0%, var(--color-paper) 50%, transparent 80%);
+  pointer-events: none;
+}
+
+/* Gallery-only override of the shared min(82vh,880px)/640px-min height —
+   that 880px ceiling was sized for battle's absolutely-positioned content,
+   not the gallery's carousel + info panel stack. auto instead sizes the
+   box to exactly what GameGallery actually renders, every time, with the
+   World Container's own overflow-y:auto handling anything taller than the
+   viewport. min-height only guards against a too-short box on a sparse
+   game entry. */
+.galleryWorld {
+  height: auto;
+  min-height: 640px;
+}
+
+.introTitle {
+  grid-area: title;
+  align-self: end;
+}
+
+/* Eyebrow typography shared by the intro title and the battle heading
+   below (both small monospace kickers above a headline). */
+.eyebrowText {
+  font: 10px var(--font-mono);
+  letter-spacing: 0.15em;
+  color: rgba(20, 20, 20, 0.5);
+}
+
+.introEyebrow {
+  display: block;
+  margin-bottom: 18px;
+}
+
+/* Dela Gothic One is a single-weight display face (400 is its only cut,
+   and it's already near-black at that weight) — scoped to this one
+   headline only, not the brand text/battle heading/creature name/body, to
+   keep it a single "this is the main event" accent rather than a
+   site-wide type change. sans-serif fallback covers the load-failure/
+   loading-window case so the headline is never blank. */
+.introTitle h1 {
+  margin: 0;
+  font-family: 'Dela Gothic One', sans-serif;
+  font-weight: 400;
+  font-size: clamp(60px, 6.8vw, 104px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+
+@media (max-height: 800px) {
+  .introTitle h1 {
+    font-size: clamp(56px, 5.8vw, 92px);
+  }
+}
+
+.introTitle h1 span {
+  display: block;
+}
+
+.creatureCol {
+  grid-area: creature;
+  align-self: center;
+  justify-self: stretch;
+  text-align: center;
+}
+
+.creatureDock {
+  width: min(78%, 340px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+/* #62625a at 13px/normal-weight against --color-paper (#f3f1ea) is
+   ~5.44:1 contrast. Kept deliberately smaller/lighter-weight than the
+   name below so it still reads as a quiet epithet, not a second
+   headline. */
+.creatureCaption {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: #62625a;
+}
+
+.creatureCaption strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 20px;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+
+.introCopy {
+  grid-area: copy;
+  /* The sole source of the title→copy gap on the 2-column layout (32px) —
+     the stacked mobile layout below zeroes this out and gets its 24px gap
+     from .creatureCol's own margin-bottom instead, so the two breakpoints
+     each have exactly one rule responsible for this gap. */
+  margin-top: 32px;
+  max-width: 460px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(20, 20, 20, 0.78);
+}
+
+.introCopy p {
+  margin: 0 0 12px;
+}
+
+.introCopy p:last-child {
+  margin-bottom: 0;
+}
+
+.introAction {
+  grid-area: action;
+  align-self: start;
+  /* copy→button gap — 24px on the 2-column layout and the stacked layout
+     both, so the mobile override below only needs to change
+     align-self/order, not this value. */
+  margin-top: 24px;
+}
+
+/* flex (not float:right on the span) so the text↔icon gap is an explicit,
+   guaranteed minimum (`gap`) rather than whatever space happens to be left
+   over in the button's own width. display:flex (block-level, not
+   inline-flex) also matters on mobile: the button's own width:fit-content
+   + margin:0 auto below only centers it because flex is a block-level
+   display — a <button>'s UA-default inline-block wouldn't respond to
+   margin:auto at all. */
+.startButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  appearance: none;
+  border: 0;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 22px 32px;
+  width: min(360px, 100%);
+  text-align: left;
+  clip-path: polygon(5% 0, 100% 0, 96% 100%, 0 100%);
+  cursor: pointer;
+  /* Duration/easing matches CommandMenu's own cursor-band glide
+     (useCommandMenuAnimation's moveCursorBand: duration 0.38, ease
+     power3.out) — this button plays that same hook's "move" sound on
+     hover/focus, so the motion it pairs with should read as the same
+     interaction language. cubic-bezier below is the standard CSS
+     approximation of GSAP's power3.out. */
+  transition: transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.startButton:hover:not(:disabled) {
+  transform: translateX(4px);
+}
+
+/* A quick press-dip on activation, not just the hover slide — echoes
+   squeezeBand's "compress, then spring back" confirm feedback in CSS's
+   simpler two-state terms. */
+.startButton:active:not(:disabled) {
+  transform: translateX(4px) scale(0.97);
+  transition: transform 0.05s ease-out;
+}
+
+.startButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.startButton span {
+  font-size: 1.3em;
+  line-height: 1;
+}
+
+/* ---------- battle phase ---------- */
+
+/* Deliberately NOT position:relative — .battleStatusAnchor/.commandAnchor
+   below must anchor to the World Container (the same element
+   useIntroPhase measures docks against), not to this wrapper, or their
+   computed positions and the actor's own measured travel target would
+   disagree. */
+.battleSection {
+  position: static;
+}
+
+/* Same top-left position WorldFrame's own eyebrow/title slot would use —
+   rendered here directly (not via that prop) since this heading should
+   only exist once the battle phase is showing, not for the whole page. */
+.battleHeading {
+  position: absolute;
+  z-index: 1;
+  left: clamp(20px, 4.2%, 44px);
+  top: clamp(18px, 4%, 34px);
+}
+
+/* Same copy and typeface as the intro's own headline (退屈を、／たおせ！
+   in Dela Gothic One), kept at this smaller in-world-headline scale rather
+   than the intro's much larger clamp(). */
+.battleHeading h1 {
+  margin: 10px 0 9px;
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1.32;
+  letter-spacing: -0.03em;
+  font-weight: 400;
+  font-family: 'Dela Gothic One', sans-serif;
+}
+
+/* Centers within [185px, 100% - 40px] rather than the full [0, 100%] —
+   185px reserves room for the heading above; 40px reserves a bottom
+   safety margin. Without it, a tall World Container (wide-but-short
+   viewports push height toward the min(82vh,880px) cap) while this
+   anchor's own content — the 38%-wide, aspect-ratio:1 dock plus
+   caption/HP rows below it — can still grow tall enough that pure
+   midpoint centering left the HP bar flush against the container's
+   bottom edge). Equivalent derivation: midpoint of [185px, 100%-40px] =
+   ((185px-40px) + 100%) / 2 = (145px + 100%) / 2. */
+.battleStatusAnchor {
+  position: absolute;
+  z-index: 1;
+  /* Named container so BattleStatus's own cqw-based dock width tracks
+     this column's fluid clamp() formula directly. */
+  container-type: inline-size;
+  left: clamp(20px, 6%, 56px);
+  top: calc((145px + 100%) / 2);
+  transform: translateY(-50%);
+  width: clamp(210px, 38%, 490px);
+  text-align: center;
+}
+
+.commandAnchor {
+  position: absolute;
+  z-index: 1;
+  right: clamp(20px, 4.5%, 46px);
+  bottom: clamp(20px, 4.5%, 46px);
+  width: clamp(290px, 42%, 560px);
+  max-width: calc(100% - 40px);
+  transition: opacity 0.4s ease;
+}
+
+.commandAnchor.isDefeated {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.commandAnchor.isReducedMotion {
+  transition-duration: 0.15s;
+}
+
+.commandAnchor::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -14px -26px -8px -30px;
+  background: linear-gradient(
+    103deg,
+    transparent 0%,
+    var(--color-paper) 19%,
+    var(--color-paper) 66%,
+    transparent 100%
+  );
+  opacity: 0.95;
+  clip-path: polygon(15% 0, 98% 0, 100% 88%, 79% 100%, 0 100%);
+  pointer-events: none;
+}
+
+@container world-outer (max-width: 799px) {
+  /* .galleryWorld's own height is already auto (matches this breakpoint's
+     shared default), just with a 640px min-height floor that's too tall
+     for mobile's narrower, more content-hugging layout — drop it to 0
+     here. */
+  .galleryWorld {
+    min-height: 0;
+  }
+
+  /* WorldFrame's own mobile breakpoint already switches the World
+     Container to height:auto (content-driven) for every route, battle
+     phase included — so .introGrid's height:100% above would just pin it
+     to that container's own natural (now content-sized) height anyway.
+     Reset to auto explicitly so it's never relying on that coincidence. */
+  .introGrid {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    /* Unlike desktop, the World Container is height:auto here (no
+       centering slack to lean on), so top/bottom padding is the only
+       thing keeping content clear of the frame's own decoration. 46px top
+       matches .battleStatusAnchor's own mobile padding below, tuned to
+       clear the frame-top hairline/corner notch; bottom is widened to
+       breathe against the screentone/slash decoration and the footer
+       below. */
+    padding: clamp(40px, 11vw, 52px) clamp(14px, 4vw, 22px) clamp(28px, 7vw, 40px);
+  }
+
+  /* align-self governs the CROSS axis once the grid above switches to a
+     column flex (title/action's own base rules set align-self:end/start
+     for the 2-column grid, where that's the BLOCK axis instead) — left
+     unoverridden, "end"/"start" push these two specifically to the right
+     edge / shrink them to content width. stretch fills the full cross
+     width — needed regardless of text-align below, since centering text
+     inside a box that's already shrunk to that text's own width does
+     nothing. */
+  .introTitle,
+  .introAction {
+    align-self: stretch;
+  }
+
+  .introTitle {
+    order: 1;
+    /* Centered to match the creature column's own centering below it —
+       .introAction (the たたかう button) deliberately stays full-width/
+       left-aligned instead (a thumb-width tap target, not reading
+       content), so only the heading/body pair centers here. */
+    text-align: center;
+  }
+
+  .introEyebrow {
+    display: none;
+  }
+
+  .introTitle h1 {
+    font-size: clamp(46px, 15vw, 60px);
+  }
+
+  /* 24px gap to .introCopy below lives here (the one rule responsible for
+     it), not duplicated as copy's own margin-top — see that rule's mobile
+     override just below, which zeroes its (desktop-only) 32px instead of
+     adding to this. */
+  .creatureCol {
+    order: 2;
+    margin: 4px 0 24px;
+  }
+
+  /* Stacked layout: the creature dock sits centered, roughly a third of
+     the way down the stack (below the title, above copy/action) rather
+     than off to the right — recenter the vignette on it and keep the
+     vertical radius tight so the title above and the copy below both land
+     in the faded zone instead of the busy solid core. Insets are smaller
+     than the wide-screen rule's 22px/44px too, matching the frame's own
+     smaller mobile corner-cut. */
+  .introGrid::before {
+    inset: 16px 0 0 26px;
+    opacity: 0.24;
+    mask-image: radial-gradient(ellipse 95% 31% at 50% 41%, #000 0%, #000 55%, transparent 100%);
+    -webkit-mask-image: radial-gradient(
+      ellipse 95% 31% at 50% 41%,
+      #000 0%,
+      #000 55%,
+      transparent 100%
+    );
+  }
+
+  /* Stacked layout: the backdrop plate needs to shield the title (top of
+     the stack) and copy/action (bottom), not a left column — two opposing
+     fades leave the creature dock's own band in the middle clear. A
+     third, measured patch (caption sits at ~50%/58% of the grid box in
+     this layout) additionally protects the kicker/name specifically. */
+  .introGrid::after {
+    inset: 16px 0 0 26px;
+    background:
+      radial-gradient(
+        ellipse 45% 12% at 50% 58%,
+        var(--color-paper) 0%,
+        var(--color-paper) 55%,
+        transparent 100%
+      ),
+      linear-gradient(to bottom, var(--color-paper) 0%, var(--color-paper) 24%, transparent 38%),
+      linear-gradient(to top, var(--color-paper) 0%, var(--color-paper) 40%, transparent 56%);
+  }
+
+  .creatureDock {
+    width: clamp(150px, 48vw, 210px);
+  }
+
+  .creatureCaption strong {
+    font-size: 18px;
+  }
+
+  .introCopy {
+    order: 3;
+    max-width: none;
+    font-size: 16px;
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .introAction {
+    order: 4;
+  }
+
+  .battleHeading {
+    left: 18px;
+    top: 18px;
+  }
+
+  .battleHeading .eyebrowText {
+    display: none;
+  }
+
+  .battleHeading h1 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  /* Hug, not fill — sized to its own content and centered under the
+     now-centered title/body above it, rather than stretched to the
+     column's full width like a form-field-style CTA. */
+  .startButton {
+    width: fit-content;
+    margin: 0 auto;
+    font-size: 20px;
+    padding: 18px 24px;
+  }
+
+  .battleStatusAnchor {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: auto;
+    padding: 46px 0 4px;
+  }
+
+  .commandAnchor {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    max-width: none;
+    margin: 0 14px 10px;
+  }
+
+  .commandAnchor::before {
+    inset: -10px -14px -6px -14px;
+    clip-path: none;
+  }
+}
+
+/* ---------- corner toggles (sound / debug) ---------- */
+
+/* Fixed to the viewport corner, not the scrolling content — stays
+   reachable regardless of scroll position or which of the two responsive
+   modes (side-by-side/stacked) is active. "isOn" inverts to solid black so
+   the two states read as clearly distinct at a glance, not just via the
+   icon swap. */
+.soundToggle {
+  position: fixed;
+  /* Above the debug sidebar's z-index — the sidebar is a fixed, full-height
+     overlay anchored right, and this button sits in that same corner, so
+     it must float above the panel rather than disappear under it when the
+     panel is open. */
+  z-index: 50;
+  right: clamp(14px, 2.4vw, 26px);
+  bottom: clamp(14px, 2.4vw, 26px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  appearance: none;
+  background: var(--color-paper);
+  border: 1.5px solid rgba(20, 20, 20, 0.55);
+  border-radius: 50%;
+  color: var(--color-ink);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(20, 20, 20, 0.18);
+}
+
+.soundToggle:hover {
+  border-color: var(--color-ink);
+}
+
+.soundToggle.isOn {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Opens/closes the debug sidebar. Fixed to the corner opposite the
+   sidebar itself (left, since the sidebar anchors right as a fixed
+   overlay) so the two never overlap, whether the panel is open or
+   closed. */
+.debugToggle {
+  position: fixed;
+  z-index: 50;
+  left: clamp(14px, 2.4vw, 26px);
+  bottom: clamp(14px, 2.4vw, 26px);
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--color-dark-surface);
+  color: var(--color-dark-surface-text);
+  padding: 8px 12px;
+  font: 11px var(--font-mono);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.debugToggle:hover {
+  border-color: #fff;
+}
+
+/* ---------- debug panel ---------- */
+
+.debugPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  width: 320px;
+  max-width: 86vw;
+  overflow-y: auto;
+  padding: 24px 22px 40px;
+  background: var(--color-dark-surface);
+  color: var(--color-dark-surface-text);
+  font-family: var(--font-mono);
+  border-left: 1px solid #000;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.debugPanelTitle {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.debugPanelSub {
+  margin: 0 0 22px;
+  font-size: 11px;
+  color: #9a988f;
+}
+
+.debugPanelGroup {
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.debugPanelGroup h2 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.debugPanelRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.debugPanelNote {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #d7a93a;
+}
+
+.debugCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debugBtn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: var(--color-dark-surface-text);
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.debugBtn:hover {
+  border-color: #fff;
+}

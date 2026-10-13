@@ -1,0 +1,32 @@
+@import './styles/tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+  background: var(--color-page-background);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visually hidden but still announced by screen readers — used across
+   several components for live-region announcements and link context, so
+   it lives here once rather than as a CSS Modules class repeated per file. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}

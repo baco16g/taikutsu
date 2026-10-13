@@ -1,0 +1,7 @@
+/* Behind IntroActor's own reveal layer — dust reads as "flying into" the
+   forming body, not sitting on top of it. */
+.dust {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}

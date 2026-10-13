@@ -1,0 +1,51 @@
+/* No background panel — タ・イクツ's own label (BattleStatus's isDefeated
+   state) and the command panel (HomePage.module.css's .commandAnchor
+   .isDefeated) fade out on this exact same `defeated` flip, so this
+   crossfades in at screen center as those crossfade out, instead of
+   cutting to a separate opaque "screen". (RevealTransition's own sheets,
+   started separately after DEFEAT_MESSAGE_HOLD_MS, still do the actual
+   full cover on the way to the gallery.) Purely decorative (just the
+   debris field below — no text), hence pointer-events:none. */
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: fadeIn 420ms ease-out forwards;
+}
+
+.root.isReducedMotion {
+  animation-duration: 140ms;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Settled シャード scatter — see DefeatMessage.tsx's SHARDS comment. Biased
+   toward where タ・イクツ sat during battle, not centered in the frame —
+   it's debris from where the creature broke apart, not a decoration
+   arranged around centered text. */
+.debris {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.shard {
+  position: absolute;
+  background: var(--color-ink);
+}
+
+.shardTri {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.shardDia {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}

@@ -1,0 +1,513 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-page-background);
+  color: var(--color-ink);
+}
+
+/* ======================================================================
+   App Canvas — viewport-wide. A plain top-to-bottom flex column: brand
+   header, then the World Container, then the footer, all in normal flow.
+   Chrome and World Container can never overlap each other because
+   nothing here is absolutely overlaid on top of anything else at this
+   level.
+   ====================================================================== */
+
+.outer {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-page-background);
+  padding: clamp(18px, 2.6vh, 30px) clamp(20px, 4vw, 64px) clamp(14px, 2.4vh, 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Reserves the scrollbar's own width whether or not it's actually
+     showing, so toggling overflow-y between auto/hidden (e.g. the
+     battle→gallery reveal locking scroll mid-transition) never shifts
+     this column's content horizontally by the scrollbar's width. */
+  scrollbar-gutter: stable;
+  /* Named container for the side-by-side/stacked switch below, shared by
+     this component's own CSS and every screen's content CSS (e.g.
+     HomePage.module.css) that needs to switch layout at the same real
+     content width. A container query against this element's own rendered
+     width, rather than a viewport @media — the debug sidebar changes the
+     actual available content width at a given viewport size, so only a
+     container query tracks the real breakpoint whether the panel is open
+     or not. CSS Modules only scopes class *selectors*, not this name, so
+     it's deliberately left as a plain, shared literal rather than a
+     module-local token. */
+  container-type: inline-size;
+  container-name: world-outer;
+}
+
+/* Permanent right-side gutter for routes with a debug sidebar (328px wide)
+   — reserved whether the panel is open or closed, since it's a fixed
+   overlay with no footprint in normal flow otherwise. Without this, the
+   World Container (sized off this element's own width) would extend
+   under the panel and get visually covered by it on wide viewports.
+   Keeping the gutter constant (not toggled with the panel) is what makes
+   opening/closing it not shift this column's content. Reset to 0 below
+   the stacked-layout breakpoint, where the sidebar overlays the
+   full-width content as a slide-over drawer instead. */
+.pageHasSidebar .outer {
+  padding-right: calc(328px + 24px);
+}
+
+@media (max-width: 860px) {
+  .pageHasSidebar .outer {
+    padding-right: clamp(20px, 4vw, 64px);
+  }
+}
+
+.siteHeader {
+  flex: 0 0 auto;
+  width: min(92%, 1440px);
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: clamp(14px, 2.2vh, 22px);
+}
+
+.devTag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(20, 20, 20, 0.38);
+}
+
+/* ======================================================================
+   World Container — sizing uses ratio/clamp, never fixed px:
+     width:  min(92%, 1440px)   (% of .outer, not vw — see note on
+                                  .worldContainer below)
+     height: min(82vh, 880px)
+     min-height: 640px
+   No overflow:hidden / clip-path on this box itself — the frame's clipped
+   paper shape lives on its own layer behind the content (.worldDeco,
+   z-index:-1), so border/clip-path interaction bugs and accidental
+   clipping of a screen's own content are both structurally impossible
+   here.
+   ====================================================================== */
+
+.worldContainer {
+  position: relative;
+  isolation: isolate;
+  flex: 0 0 auto;
+  /* % of .outer (the flex column), not vw: vw is relative to the viewport
+     regardless of ancestors, so with a debug sidebar beside .outer (a
+     sibling a real, sidebar-less screen wouldn't have) vw would overshoot
+     outer's actual available width. % gives the identical
+     92%-with-a-1440px-cap result in the sidebar-less case while staying
+     correct here too. */
+  width: min(92%, 1440px);
+  max-width: 100%;
+  height: min(82vh, 880px);
+  min-height: 640px;
+}
+
+/* ---------- World Decoration: frame lines, paper shape, screentone,
+   diagonal accents — a stack of independent absolutely-positioned layers,
+   not a border/clip-path combo on a single shared box. ---------- */
+
+.worldDeco {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Thinned decoration (decorationStrength="thin") — for a screen whose own
+   headline/body/button are meant to be the loudest things on screen, where
+   the frame's own accent marks would otherwise compete for attention. */
+.worldDecoThin .horizon,
+.worldDecoThin .slashEcho {
+  display: none;
+}
+
+.worldDecoThin .slashMain {
+  width: 130px;
+  height: 80px;
+}
+
+.worldDecoThin .toneFine {
+  opacity: 0.18;
+}
+
+.worldDecoThin .toneMedium {
+  opacity: 0.4;
+}
+
+.worldDecoThin .toneDense {
+  opacity: 0.5;
+}
+
+/* The World Container's own silhouette — corner cuts top-left and a few
+   small stepped notches along the right/bottom edges. This clip-path is
+   what gives the "Broken Frame" its shape; the line segments below only
+   retrace parts of it, deliberately not all of it. */
+.worldSurface {
+  position: absolute;
+  inset: 0;
+  background: var(--color-paper);
+  box-shadow: 0 18px 44px rgba(20, 20, 20, 0.12);
+  clip-path: polygon(
+    38px 0,
+    84% 0,
+    84% 8px,
+    100% 8px,
+    100% 72%,
+    97% 78%,
+    100% 78%,
+    100% 100%,
+    61% 100%,
+    59% calc(100% - 8px),
+    0 calc(100% - 8px),
+    0 38px
+  );
+}
+
+.frameTop {
+  position: absolute;
+  top: 0;
+  left: 38px;
+  width: 66%;
+  height: 1px;
+  background: var(--color-ink);
+}
+
+.frameTop::after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 4px;
+  right: -115px;
+  background: var(--color-ink);
+}
+
+.frameLeft {
+  position: absolute;
+  left: 0;
+  top: 38px;
+  height: 29%;
+  width: 1px;
+  background: var(--color-ink);
+}
+
+.frameLeft::after {
+  content: '';
+  position: absolute;
+  top: 190%;
+  height: 96px;
+  border-left: 1px dashed rgba(20, 20, 20, 0.45);
+}
+
+/* Right+bottom are deliberately partial — a dashed implied-edge on the
+   right, a short solid run on the bottom, not full edges. */
+.frameRight {
+  position: absolute;
+  top: 9%;
+  right: 0;
+  height: 16%;
+  border-left: 1px dashed rgba(20, 20, 20, 0.45);
+}
+
+.frameBottom {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  width: 34%;
+  border-bottom: 1px solid var(--color-ink);
+}
+
+.frameBottom::after {
+  content: '';
+  position: absolute;
+  left: 107%;
+  width: 62px;
+  border-bottom: 1px dashed rgba(20, 20, 20, 0.5);
+}
+
+.frameCut {
+  position: absolute;
+  left: -8px;
+  top: 16px;
+  width: 54px;
+  height: 3px;
+  background: var(--color-ink);
+  transform: rotate(-45deg);
+}
+
+.frameCut::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 9px;
+  left: 25px;
+  top: -8px;
+  background: var(--color-ink);
+}
+
+.frameCutSecondary {
+  position: absolute;
+  right: -7px;
+  top: 72%;
+  width: 50px;
+  height: 4px;
+  background: var(--color-ink);
+  transform: rotate(-45deg);
+}
+
+/* Screentone — three layers at different dot density, each clipped to its
+   own wedge and positioned bottom-right, so density concentrates toward
+   that corner and stays quiet elsewhere instead of one flat, uniform
+   pattern. */
+.tone {
+  position: absolute;
+  bottom: -9px;
+  right: -25px;
+  background-image: radial-gradient(
+    circle,
+    rgba(52, 52, 49, 0.9) var(--dot-radius),
+    transparent calc(var(--dot-radius) + 0.2px)
+  );
+  background-size: var(--dot-space) var(--dot-space);
+}
+
+.toneFine {
+  --dot-radius: 0.6px;
+  --dot-space: 5px;
+  width: 65%;
+  height: 75%;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.3;
+  -webkit-mask-image: linear-gradient(135deg, transparent 25%, #000 90%);
+  mask-image: linear-gradient(135deg, transparent 25%, #000 90%);
+}
+
+.toneMedium {
+  --dot-radius: 0.85px;
+  --dot-space: 4px;
+  width: 55%;
+  height: 84%;
+  clip-path: polygon(100% 2%, 100% 100%, 0 100%, 20% 83%, 42% 82%, 36% 65%);
+  -webkit-mask-image: linear-gradient(118deg, transparent 24%, #000 100%);
+  mask-image: linear-gradient(118deg, transparent 24%, #000 100%);
+  opacity: 0.65;
+}
+
+.toneDense {
+  --dot-radius: 1px;
+  --dot-space: 3px;
+  width: 34%;
+  height: 29%;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.85;
+}
+
+.slash {
+  position: absolute;
+  background: var(--color-ink);
+}
+
+.slashMain {
+  right: -27px;
+  bottom: -14px;
+  height: 150px;
+  width: 285px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.slashEcho {
+  right: 0;
+  bottom: -21px;
+  height: 5px;
+  width: 180px;
+  transform: rotate(28deg);
+  transform-origin: right;
+}
+
+.horizon {
+  position: absolute;
+  top: 63%;
+  left: -12px;
+  width: 57%;
+  height: 1px;
+  transform: rotate(-7deg);
+  background: linear-gradient(to right, #c6c5bf, #deddd7 67%, transparent);
+}
+
+/* ---------- in-world headline ---------- */
+
+.worldIntro {
+  position: absolute;
+  z-index: 1;
+  left: clamp(20px, 4.2%, 44px);
+  top: clamp(18px, 4%, 34px);
+}
+
+.eyebrow {
+  font: 10px var(--font-mono);
+  letter-spacing: 0.15em;
+  color: rgba(20, 20, 20, 0.5);
+}
+
+.worldIntro h1 {
+  margin: 10px 0 9px;
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1.32;
+  letter-spacing: -0.03em;
+  font-weight: 900;
+}
+
+.worldIntro p {
+  margin: 0;
+  max-width: 260px;
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  color: rgba(20, 20, 20, 0.5);
+}
+
+/* ---------- world note (bottom-left) ---------- */
+
+.worldNote {
+  position: absolute;
+  z-index: 1;
+  bottom: clamp(12px, 2.6%, 22px);
+  left: clamp(20px, 4.2%, 44px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: rgba(20, 20, 20, 0.45);
+}
+
+.worldNote span {
+  font:
+    12px -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  letter-spacing: 0.02em;
+  color: rgba(20, 20, 20, 0.72);
+}
+
+.worldNote i {
+  width: 22px;
+  height: 1px;
+  background: rgba(20, 20, 20, 0.3);
+}
+
+/* ======================================================================
+   Responsive — exactly two layout modes, one breakpoint (799px of actual
+   content width): side-by-side and stacked. @container against the
+   shared world-outer name (see .outer above), not a viewport @media. Any
+   screen's own content CSS mirrors this exact breakpoint the same way,
+   since the frame and that content must switch together.
+   ====================================================================== */
+
+@container world-outer (max-width: 799px) {
+  .siteHeader {
+    padding-bottom: 10px;
+  }
+
+  .worldContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .worldSurface {
+    clip-path: polygon(22px 0, 77% 0, 77% 5px, 100% 5px, 100% 100%, 0 100%, 0 22px);
+  }
+
+  .frameTop {
+    left: 22px;
+    width: 50%;
+  }
+
+  .frameTop::after {
+    width: 31px;
+    height: 3px;
+    right: -62px;
+  }
+
+  .frameLeft {
+    top: 22px;
+    height: 90px;
+  }
+
+  .frameCut {
+    width: 32px;
+    left: -6px;
+    top: 10px;
+    height: 2px;
+  }
+
+  .frameCut::after {
+    width: 13px;
+    height: 5px;
+    left: 20px;
+    top: -4px;
+  }
+
+  .frameLeft::after,
+  .frameRight,
+  .frameBottom,
+  .frameCutSecondary,
+  .horizon,
+  .toneMedium {
+    display: none;
+  }
+
+  .toneFine {
+    right: -14px;
+    width: 102%;
+    height: 68%;
+  }
+
+  .toneDense {
+    right: -16px;
+    width: 72%;
+    height: 24%;
+    opacity: 0.75;
+  }
+
+  .slashMain {
+    right: -16px;
+    bottom: -8px;
+    width: 108px;
+    height: 100px;
+  }
+
+  .slashEcho {
+    right: -6px;
+    bottom: -8px;
+    width: 140px;
+    transform: rotate(39deg);
+  }
+
+  .worldIntro {
+    left: 18px;
+    top: 18px;
+  }
+
+  .eyebrow,
+  .worldIntro p {
+    display: none;
+  }
+
+  .worldIntro h1 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .worldNote {
+    display: none;
+  }
+}
