@@ -3,7 +3,7 @@ import { blobPointsToPath } from './shapeMath'
 import { CENTER, VIEW_SIZE, type Hp } from './shapeStates'
 import { COLLAPSE_HOLES } from './collapseHoles'
 import { TextureFilters, TextureGradients, TextureLayer } from './textures'
-import { useCreatureAnimation } from './useCreatureAnimation'
+import { useCreatureAnimation, type ImpactInfo } from './useCreatureAnimation'
 import { HitParticles, type HitParticlesHandle } from './HitParticles'
 import styles from './TaikutsuCreature.module.css'
 
@@ -35,7 +35,7 @@ export function TaikutsuCreature({
   const [hp, setHp] = useState<Hp>(5)
   const particlesRef = useRef<HitParticlesHandle>(null)
 
-  const handleImpact = (impact: { xFrac: number; yFrac: number; big: boolean }) => {
+  const handleImpact = (impact: ImpactInfo) => {
     particlesRef.current?.burst(impact.xFrac, impact.yFrac, impact.big)
   }
 

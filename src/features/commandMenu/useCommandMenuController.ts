@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { ALL_MOVES, ATTACK_LIMIT, VISIBLE_COUNT, createShuffledPool, drawMoves } from './moves'
 import type { MoveEntry } from './types'
 
-export type CommandMenuStatus = 'active' | 'complete'
+type CommandMenuStatus = 'active' | 'complete'
 
 interface ControllerState {
   status: CommandMenuStatus

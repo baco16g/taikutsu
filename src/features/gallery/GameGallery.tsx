@@ -1,16 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
 import { GalleryCarousel } from './GalleryCarousel'
 import { GameInfoPanel } from './GameInfoPanel'
 import { FIXTURE_CHOSEN_MOVES, FIXTURE_GAMES } from './recommendationFixture'
-import type { GalleryGame, GalleryMove } from './types'
+import type { GalleryMove } from './types'
 import styles from './GameGallery.module.css'
-
-export interface GalleryEvents {
-  onSelect?: (index: number, game: GalleryGame) => void
-  onIntroStart?: () => void
-  onIntroComplete?: () => void
-}
 
 export interface GameGalleryProps {
   reducedMotion: boolean
@@ -24,7 +18,6 @@ export interface GameGalleryProps {
    * fallback for any caller that has no real session to pull from).
    */
   chosenMoves?: GalleryMove[]
-  events?: GalleryEvents
 }
 
 /**
@@ -39,48 +32,18 @@ export interface GameGalleryProps {
  * start in one render, instead of resetting it after the fact and risking
  * a frame where the entrance plays against a stale selectedIndex.
  */
-export function GameGallery({
-  reducedMotion,
-  introReplayToken,
-  chosenMoves,
-  events,
-}: GameGalleryProps) {
+export function GameGallery({ reducedMotion, introReplayToken, chosenMoves }: GameGalleryProps) {
   return (
-    <GalleryBody
-      key={introReplayToken}
-      reducedMotion={reducedMotion}
-      chosenMoves={chosenMoves}
-      events={events}
-    />
+    <GalleryBody key={introReplayToken} reducedMotion={reducedMotion} chosenMoves={chosenMoves} />
   )
 }
 
-function GalleryBody({
-  reducedMotion,
-  chosenMoves,
-  events,
-}: Omit<GameGalleryProps, 'introReplayToken'>) {
+function GalleryBody({ reducedMotion, chosenMoves }: Omit<GameGalleryProps, 'introReplayToken'>) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [introSettled, setIntroSettled] = useState(false)
 
   const games = FIXTURE_GAMES
   const effectiveChosenMoves = chosenMoves ?? FIXTURE_CHOSEN_MOVES
-
-  useEffect(() => {
-    events?.onIntroStart?.()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const handleSelect = (index: number) => {
-    setSelectedIndex(index)
-    events?.onSelect?.(index, games[index])
-  }
-
-  const handleIntroSettled = () => {
-    setIntroSettled(true)
-    events?.onIntroComplete?.()
-  }
-
   const game = games[selectedIndex]
 
   return (
@@ -103,8 +66,8 @@ function GalleryBody({
       <GalleryCarousel
         games={games}
         selectedIndex={selectedIndex}
-        onSelect={handleSelect}
-        onIntroSettled={handleIntroSettled}
+        onSelect={setSelectedIndex}
+        onIntroSettled={() => setIntroSettled(true)}
         reducedMotion={reducedMotion}
       />
 
