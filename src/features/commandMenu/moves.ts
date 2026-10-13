@@ -2,7 +2,8 @@ import specialMovesData from '../../../data/specialMoves.json'
 import { MOVE_ICONS } from './moveIcons'
 import type { MoveEntry } from './types'
 
-interface RawMove {
+/** A move's raw shape in data/specialMoves.json, before an icon is attached. */
+export interface RawMove {
   id: string
   name: string
   shortDescription: string

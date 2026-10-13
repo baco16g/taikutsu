@@ -1,5 +1,6 @@
 import specialMovesData from '../../../data/specialMoves.json'
 import gameIntrosData from '../../../data/gameIntros.json'
+import type { RawMove } from '../commandMenu/moves'
 import type { GalleryConnection, GalleryGame, GalleryMove } from './types'
 
 /**
@@ -12,12 +13,6 @@ import type { GalleryConnection, GalleryGame, GalleryMove } from './types'
  * move↔game association data a real engine would consume as input;
  * `GalleryGame`/`GalleryMove` are shaped to match what it should return.
  */
-
-interface RawMove {
-  id: string
-  name: string
-  shortDescription: string
-}
 
 interface RawRelatedMove {
   moveId: string

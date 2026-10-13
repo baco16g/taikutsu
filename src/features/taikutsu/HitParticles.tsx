@@ -1,4 +1,5 @@
-import { useEffect, useImperativeHandle, useRef } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useRef } from 'react'
+import { useOversizedCanvas } from '../../hooks/useOversizedCanvas'
 
 export interface HitParticlesHandle {
   burst: (xFrac: number, yFrac: number, big: boolean) => void
@@ -26,10 +27,11 @@ interface HitParticlesProps {
 const SHARD_COLOR = '#141414'
 
 // The particle canvas is deliberately bigger than the creature's own box
-// (see resize() below) so flung debris has room to travel. EDGE_FADE_START/
-// END describe, as a fraction of that canvas's half-size, where particles
-// start dissolving and where they're fully gone — well inside the true
-// canvas edge, so nothing is ever visibly clipped by a box boundary.
+// (see CANVAS_OVERFLOW / useOversizedCanvas below) so flung debris has room
+// to travel. EDGE_FADE_START/END describe, as a fraction of that canvas's
+// half-size, where particles start dissolving and where they're fully gone
+// — well inside the true canvas edge, so nothing is ever visibly clipped by
+// a box boundary.
 const EDGE_FADE_START = 0.55
 const EDGE_FADE_END = 0.92
 
@@ -72,52 +74,9 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
   // boxW/boxH: the creature's own box (what xFrac/yFrac are relative to).
   // canvasW/canvasH: the larger particle surface. offsetX/offsetY: where the
   // box sits within that surface (so box-relative coords can be recentred).
-  const sizeRef = useRef({
-    boxW: 0,
-    boxH: 0,
-    canvasW: 0,
-    canvasH: 0,
-    offsetX: 0,
-    offsetY: 0,
-    dpr: 1,
-  })
+  const sizeRef = useOversizedCanvas(canvasRef, CANVAS_OVERFLOW)
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const container = canvas.parentElement
-    if (!container) return
-
-    const resize = () => {
-      const rect = container.getBoundingClientRect()
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const canvasW = rect.width * CANVAS_OVERFLOW
-      const canvasH = rect.height * CANVAS_OVERFLOW
-      const offsetX = (canvasW - rect.width) / 2
-      const offsetY = (canvasH - rect.height) / 2
-      sizeRef.current = {
-        boxW: rect.width,
-        boxH: rect.height,
-        canvasW,
-        canvasH,
-        offsetX,
-        offsetY,
-        dpr,
-      }
-      canvas.width = Math.max(1, Math.round(canvasW * dpr))
-      canvas.height = Math.max(1, Math.round(canvasH * dpr))
-      canvas.style.width = `${canvasW}px`
-      canvas.style.height = `${canvasH}px`
-      canvas.style.left = `${-offsetX}px`
-      canvas.style.top = `${-offsetY}px`
-    }
-    resize()
-    const observer = new ResizeObserver(resize)
-    observer.observe(container)
-    return () => observer.disconnect()
-  }, [])
-
-  const ensureLoop = () => {
+  const ensureLoop = useCallback(() => {
     if (rafRef.current != null) return
     const step = () => {
       const canvas = canvasRef.current
@@ -126,8 +85,8 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
         rafRef.current = null
         return
       }
-      const { canvasW, canvasH, dpr } = sizeRef.current
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      // useOversizedCanvas already applies the DPR transform on resize.
+      const { canvasW, canvasH } = sizeRef.current
       ctx.clearRect(0, 0, canvasW, canvasH)
 
       const centerX = canvasW / 2
@@ -162,7 +121,7 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
       }
     }
     rafRef.current = requestAnimationFrame(step)
-  }
+  }, [sizeRef])
 
   useImperativeHandle(
     ref,
@@ -223,7 +182,7 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
         if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
       },
     }),
-    [reducedMotion],
+    [reducedMotion, ensureLoop, sizeRef],
   )
 
   useEffect(() => {
@@ -233,8 +192,8 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
   }, [])
 
   return (
-    // left/top/width/height are set imperatively in resize() above — the
-    // canvas is intentionally larger than this element's own box and
+    // left/top/width/height are set imperatively by useOversizedCanvas —
+    // the canvas is intentionally larger than this element's own box and
     // centred over it, so it isn't sized via CSS percentages here.
     <canvas ref={canvasRef} style={{ position: 'absolute', pointerEvents: 'none' }} />
   )
