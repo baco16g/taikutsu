@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import gsap from 'gsap'
 import { Draggable } from 'gsap/Draggable'
+import styles from './GalleryCarousel.module.css'
 
 gsap.registerPlugin(Draggable)
 
@@ -47,7 +48,7 @@ export function useGalleryDrag(
         window.clearTimeout(clearTimer)
         gsap.killTweensOf(el)
         maxDistance = 0
-        el.classList.add('is-dragging')
+        el.classList.add(styles.isDragging)
       },
       onDrag(this: Draggable) {
         maxDistance = Math.max(maxDistance, Math.abs(this.x))
@@ -55,7 +56,7 @@ export function useGalleryDrag(
       // Fires on every release, drag or not — unlike onDragEnd (drags
       // only), so a plain click always clears the grabbing cursor too.
       onRelease() {
-        el.classList.remove('is-dragging')
+        el.classList.remove(styles.isDragging)
       },
       onDragEnd(this: Draggable) {
         const finalX = this.x

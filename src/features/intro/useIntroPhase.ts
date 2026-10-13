@@ -121,7 +121,7 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     const viewportBefore = wrapper.getBoundingClientRect()
     // Pin #world's own height to its current (intro) value across the
     // swap — an explicit height, not just a min-height floor: on mobile
-    // (.cmdproto-world-container is height:auto there) battle's own
+    // (the World Container is height:auto there) battle's own
     // content can be either taller OR shorter than intro's, and a floor
     // alone only ever stopped it shrinking, not the instant snap upward
     // the moment battle (e.g. its command list) needed more room than
@@ -132,7 +132,7 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
 
     flushSync(() => setPhase('moving'))
 
-    // Only NOW does .introproto-battle (and its dock) actually exist in the
+    // Only NOW does the battle section (and its dock) actually exist in the
     // DOM — it's gated behind the same `phase` this flushSync just
     // committed. Reading battleDockRef any earlier always found it null,
     // which silently fell back to the no-tween branch above on every run —
@@ -147,11 +147,10 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     // Battle's own natural height, measured with the pin momentarily
     // lifted and immediately restored — synchronous, so nothing paints in
     // between and the unpinned size is never actually shown. On desktop
-    // .cmdproto-world-container's height is a fixed vh/px formula that
-    // doesn't depend on content, so fromHeight and toHeight come out
-    // identical there and the tween below is a harmless no-op (this is
-    // the mobile-only bug WorldFrame.css's own comment already flagged —
-    // see its height:auto breakpoint rule).
+    // the World Container's height is a fixed vh/px formula that doesn't
+    // depend on content, so fromHeight and toHeight come out identical
+    // there and the tween below is a harmless no-op — only mobile's
+    // height:auto breakpoint actually needs this tween.
     world.style.height = ''
     const toHeight = world.getBoundingClientRect().height
     world.style.height = `${fromHeight}px`
@@ -319,11 +318,11 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // The intro headline now loads a webfont (Dela Gothic One). It's
-  // requested with display:swap, so the very first paint above already
-  // used the fallback — but the swap itself, whenever it lands, can change
-  // that headline's own box height, and with it the grid's total content
-  // height (.introproto-grid centers its content vertically), shifting
+  // The intro headline loads a webfont (Dela Gothic One), requested with
+  // display:swap, so the very first paint above already used the
+  // fallback — but the swap itself, whenever it lands, can change that
+  // headline's own box height, and with it the grid's total content
+  // height (the intro grid centers its content vertically), shifting
   // where the dock actually sits. document.fonts.ready resolves once that
   // swap (or its failure) has settled, so re-measuring then keeps the
   // actor aligned with the dock's final, post-swap position — a silent

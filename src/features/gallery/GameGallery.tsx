@@ -8,8 +8,6 @@ import styles from './GameGallery.module.css'
 
 export interface GameGalleryProps {
   reducedMotion: boolean
-  /** Bump to replay the one-time entrance — e.g. from a debug control. */
-  introReplayToken: number
   /**
    * The player's actual 5 chosen moves for this session (from the
    * battle→gallery reveal). There is no real recommendation engine yet
@@ -25,20 +23,8 @@ export interface GameGalleryProps {
  * the battle screen are the caller's job, not this component's. Game data
  * comes from recommendationFixture.ts, which stands in for a real
  * recommendation engine.
- *
- * `introReplayToken` is applied as a `key` below, not read reactively:
- * remounting on a bump gives every bit of state (selectedIndex,
- * introSettled, the carousel's own "has mounted" flag) a genuinely fresh
- * start in one render, instead of resetting it after the fact and risking
- * a frame where the entrance plays against a stale selectedIndex.
  */
-export function GameGallery({ reducedMotion, introReplayToken, chosenMoves }: GameGalleryProps) {
-  return (
-    <GalleryBody key={introReplayToken} reducedMotion={reducedMotion} chosenMoves={chosenMoves} />
-  )
-}
-
-function GalleryBody({ reducedMotion, chosenMoves }: Omit<GameGalleryProps, 'introReplayToken'>) {
+export function GameGallery({ reducedMotion, chosenMoves }: GameGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [introSettled, setIntroSettled] = useState(false)
 

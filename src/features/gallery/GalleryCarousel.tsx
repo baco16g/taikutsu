@@ -16,12 +16,7 @@ export interface GalleryCarouselProps {
   reducedMotion: boolean
 }
 
-/**
- * Plays its entrance once per mount. The debug page replays it by
- * remounting this whole gallery subtree (see GameGallery's `key`) —
- * simpler and race-free compared to reacting to a "replay" prop here,
- * since selectedIndex is guaranteed fresh (0) by the time this runs.
- */
+/** Plays its entrance once per mount. */
 export function GalleryCarousel({
   games,
   selectedIndex,

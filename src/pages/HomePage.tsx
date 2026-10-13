@@ -267,7 +267,6 @@ export function HomePage() {
             {showGallery && (
               <GameGallery
                 reducedMotion={reducedMotion}
-                introReplayToken={0}
                 chosenMoves={chosenMovesRef.current.length > 0 ? chosenMovesRef.current : undefined}
               />
             )}
