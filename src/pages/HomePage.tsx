@@ -35,12 +35,8 @@ const DEFEAT_MESSAGE_HOLD_MS = 800
  * intro→battle handoff exists to avoid).
  */
 export function HomePage() {
-  const systemReducedMotion = usePrefersReducedMotion()
-  const [forceReducedMotion, setForceReducedMotion] = useState(false)
-  const reducedMotion = systemReducedMotion || forceReducedMotion
-
+  const reducedMotion = usePrefersReducedMotion()
   const [soundEnabled, setSoundEnabled] = useState(false)
-  const [debugOpen, setDebugOpen] = useState(false)
   const [announcement, setAnnouncement] = useState('')
 
   // Reuses CommandMenu's own sound set (useCommandSound) and its
@@ -139,21 +135,6 @@ export function HomePage() {
     },
   }
 
-  const debugResetAll = () => {
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
-    holdTimerRef.current = null
-    defeatHandledRef.current = false
-    setDefeated(false)
-    setRevealActive(false)
-    setShowGallery(false)
-    setHitSignal(0)
-    setImpactCount(0)
-    chosenMovesRef.current = []
-    creatureRef.current?.reset()
-    setAnnouncement('')
-    intro.resetIntro()
-  }
-
   const showIntro = ['arrival', 'ready', 'depart'].includes(intro.phase)
   const showBattle = ['moving', 'settling', 'battle'].includes(intro.phase)
   const introInert = intro.phase !== 'arrival' && intro.phase !== 'ready'
@@ -163,69 +144,23 @@ export function HomePage() {
     <>
       <WorldFrame
         worldContainerRef={intro.worldRef}
-        hasSidebar={debugOpen}
         decorationStrength={showIntro ? 'thin' : 'normal'}
         className={showGallery ? styles.galleryWorld : undefined}
         note={showIntro ? '© OpenStreetMap contributors' : undefined}
         cornerExtra={
-          <>
-            <button
-              type="button"
-              className={clsx(styles.soundToggle, soundEnabled && styles.isOn)}
-              onClick={() => setSoundEnabled((v) => !v)}
-              aria-pressed={soundEnabled}
-              aria-label={soundEnabled ? 'サウンドをオフにする' : 'サウンドをオンにする'}
-            >
-              {soundEnabled ? (
-                <SpeakerHighIcon size={18} weight="bold" aria-hidden="true" />
-              ) : (
-                <SpeakerXIcon size={18} weight="bold" aria-hidden="true" />
-              )}
-            </button>
-            <button
-              type="button"
-              className={styles.debugToggle}
-              onClick={() => setDebugOpen((v) => !v)}
-              aria-pressed={debugOpen}
-            >
-              {debugOpen ? 'デバッグUIを隠す' : 'デバッグUIを表示'}
-            </button>
-          </>
-        }
-        sidebar={
-          debugOpen ? (
-            <aside className={styles.debugPanel}>
-              <h1 className={styles.debugPanelTitle}>デバッグパネル</h1>
-              <p className={styles.debugPanelSub}>開発・検証用のコントロールです</p>
-
-              <section className={styles.debugPanelGroup}>
-                <h2>モーション</h2>
-                <label className={styles.debugCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={forceReducedMotion}
-                    onChange={(e) => setForceReducedMotion(e.target.checked)}
-                  />
-                  prefers-reduced-motion を強制 ON にして確認する
-                </label>
-                {systemReducedMotion && (
-                  <p className={styles.debugPanelNote}>
-                    ※ OS設定で reduce-motion が検出されています
-                  </p>
-                )}
-              </section>
-
-              <section className={styles.debugPanelGroup}>
-                <h2>セッション</h2>
-                <div className={styles.debugPanelRow}>
-                  <button type="button" className={styles.debugBtn} onClick={debugResetAll}>
-                    導入からやり直す
-                  </button>
-                </div>
-                <p className={styles.debugPanelNote}>現在のフェーズ: {intro.phase}</p>
-              </section>
-            </aside>
-          ) : null
+          <button
+            type="button"
+            className={clsx(styles.soundToggle, soundEnabled && styles.isOn)}
+            onClick={() => setSoundEnabled((v) => !v)}
+            aria-pressed={soundEnabled}
+            aria-label={soundEnabled ? 'サウンドをオフにする' : 'サウンドをオンにする'}
+          >
+            {soundEnabled ? (
+              <SpeakerHighIcon size={18} weight="bold" aria-hidden="true" />
+            ) : (
+              <SpeakerXIcon size={18} weight="bold" aria-hidden="true" />
+            )}
+          </button>
         }
       >
         {showIntro && (

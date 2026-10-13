@@ -537,7 +537,7 @@
   }
 }
 
-/* ---------- corner toggles (sound / debug) ---------- */
+/* ---------- corner toggle (sound) ---------- */
 
 /* Fixed to the viewport corner, not the scrolling content — stays
    reachable regardless of scroll position or which of the two responsive
@@ -546,10 +546,6 @@
    icon swap. */
 .soundToggle {
   position: fixed;
-  /* Above the debug sidebar's z-index — the sidebar is a fixed, full-height
-     overlay anchored right, and this button sits in that same corner, so
-     it must float above the panel rather than disappear under it when the
-     panel is open. */
   z-index: 50;
   right: clamp(14px, 2.4vw, 26px);
   bottom: clamp(14px, 2.4vw, 26px);
@@ -576,110 +572,4 @@
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-paper);
-}
-
-/* Opens/closes the debug sidebar. Fixed to the corner opposite the
-   sidebar itself (left, since the sidebar anchors right as a fixed
-   overlay) so the two never overlap, whether the panel is open or
-   closed. */
-.debugToggle {
-  position: fixed;
-  z-index: 50;
-  left: clamp(14px, 2.4vw, 26px);
-  bottom: clamp(14px, 2.4vw, 26px);
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: var(--color-dark-surface);
-  color: var(--color-dark-surface-text);
-  padding: 8px 12px;
-  font: 11px var(--font-mono);
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.debugToggle:hover {
-  border-color: #fff;
-}
-
-/* ---------- debug panel ---------- */
-
-.debugPanel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
-  width: 320px;
-  max-width: 86vw;
-  overflow-y: auto;
-  padding: 24px 22px 40px;
-  background: var(--color-dark-surface);
-  color: var(--color-dark-surface-text);
-  font-family: var(--font-mono);
-  border-left: 1px solid #000;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
-}
-
-.debugPanelTitle {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.debugPanelSub {
-  margin: 0 0 22px;
-  font-size: 11px;
-  color: #9a988f;
-}
-
-.debugPanelGroup {
-  margin-bottom: 20px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.debugPanelGroup h2 {
-  margin: 0 0 10px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-accent);
-}
-
-.debugPanelRow {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.debugPanelNote {
-  margin: 8px 0 0;
-  font-size: 11px;
-  line-height: 1.6;
-  color: #d7a93a;
-}
-
-.debugCheckbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.debugBtn {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: transparent;
-  color: var(--color-dark-surface-text);
-  padding: 7px 12px;
-  font-family: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.debugBtn:hover {
-  border-color: #fff;
 }

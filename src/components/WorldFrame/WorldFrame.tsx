@@ -42,10 +42,6 @@ export interface WorldFrameProps {
   note?: ReactNode
   /** Rendered outside <main>, fixed to the viewport — e.g. the sound toggle. */
   cornerExtra?: ReactNode
-  /** A debug/verification sidebar, rendered as a sibling of <main> (the dark dev panel). Omit to leave it out entirely. The sidebar itself is a fixed overlay (out of flow), so its DOM presence can toggle freely (e.g. only while open) without affecting this. */
-  sidebar?: ReactNode
-  /** Whether this route has a debug sidebar at all — independent of whether it's currently open or closed. Reserves permanent right-side room on desktop so opening/closing `sidebar` never shifts the content, and the fixed-position panel never overlaps it. Pass `true` whenever `sidebar` may render, even while it's closed; omit if this screen never has one. */
-  hasSidebar?: boolean
   /** Thins out the shared frame decoration (hides the horizon line and echo slash, shrinks the main slash, lowers the screentone opacity) for a screen whose own content should be the loudest thing visible. Default 'normal'. */
   decorationStrength?: 'normal' | 'thin'
   /** Extra class on the World Container itself, for a screen's own content-positioning CSS to hook into (e.g. a specific max-width or padding for a centered layout vs. an absolutely-positioned one). */
@@ -58,15 +54,13 @@ export interface WorldFrameProps {
 export function WorldFrame({
   note,
   cornerExtra,
-  sidebar,
-  hasSidebar,
   decorationStrength = 'normal',
   className,
   worldContainerRef,
   children,
 }: WorldFrameProps) {
   return (
-    <div className={clsx(styles.page, hasSidebar && styles.pageHasSidebar)}>
+    <div className={styles.page}>
       {cornerExtra}
 
       {/* data-scroll-root, not a class: RevealTransition looks up this
@@ -82,8 +76,6 @@ export function WorldFrame({
           {note && <div className={styles.worldNote}>{note}</div>}
         </div>
       </main>
-
-      {sidebar}
     </div>
   )
 }

@@ -43,25 +43,6 @@
   container-name: world-outer;
 }
 
-/* Permanent right-side gutter for routes with a debug sidebar (328px wide)
-   — reserved whether the panel is open or closed, since it's a fixed
-   overlay with no footprint in normal flow otherwise. Without this, the
-   World Container (sized off this element's own width) would extend
-   under the panel and get visually covered by it on wide viewports.
-   Keeping the gutter constant (not toggled with the panel) is what makes
-   opening/closing it not shift this column's content. Reset to 0 below
-   the stacked-layout breakpoint, where the sidebar overlays the
-   full-width content as a slide-over drawer instead. */
-.pageHasSidebar .outer {
-  padding-right: calc(328px + 24px);
-}
-
-@media (max-width: 860px) {
-  .pageHasSidebar .outer {
-    padding-right: clamp(20px, 4vw, 64px);
-  }
-}
-
 /* ======================================================================
    World Container — sizing uses ratio/clamp, never fixed px:
      width:  min(92%, 1440px)   (% of .outer, not vw — see note on
