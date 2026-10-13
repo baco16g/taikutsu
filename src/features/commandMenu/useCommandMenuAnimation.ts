@@ -165,8 +165,7 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
       // The move's own icon (CommandMenu.tsx's iconElsRef), not the whole
       // row — flying the full row read as "the command itself leaves the
       // menu," when the point is just launching the move at タ・イクツ.
-      // Falls back to a row element (HTMLElement) when icons are off.
-      fromEl: HTMLElement | SVGSVGElement
+      fromEl: SVGSVGElement
       targetEl: HTMLElement | null
       fxLayer: HTMLElement
       reducedMotion: boolean

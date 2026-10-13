@@ -34,13 +34,6 @@ function WorldDecoration({ thin }: { thin: boolean }) {
 }
 
 export interface WorldFrameProps {
-  /** Shown top-right of the page-level header, e.g. "/" — a raw route path,
-      so only dev-facing routes pass it; the shipped "/" screen omits it. */
-  devPath?: string
-  /** In-world headline block, top-left inside the frame — all optional since not every screen wants one (the gallery doesn't; it has its own heading). */
-  eyebrow?: string
-  title?: ReactNode
-  subtitle?: string
   /** Bottom-left small tagline inside the frame — e.g. the intro screen's
       required "© OpenStreetMap contributors" credit for its background
       image (ODbL requires this stay visible whenever that derived imagery
@@ -57,16 +50,12 @@ export interface WorldFrameProps {
   decorationStrength?: 'normal' | 'thin'
   /** Extra class on the World Container itself, for a screen's own content-positioning CSS to hook into (e.g. a specific max-width or padding for a centered layout vs. an absolutely-positioned one). */
   className?: string
-  /** Ref to the World Container itself — e.g. for a screen that needs to measure its own position/size (spec: the battle→gallery reveal transition reads this to anchor its cover layer to the frame's current top edge). */
+  /** Ref to the World Container itself — e.g. for a screen that needs to measure its own position/size (the battle→gallery reveal transition reads this to anchor its cover layer to the frame's current top edge). */
   worldContainerRef?: Ref<HTMLDivElement>
   children: ReactNode
 }
 
 export function WorldFrame({
-  devPath,
-  eyebrow,
-  title,
-  subtitle,
   note,
   cornerExtra,
   sidebar,
@@ -85,22 +74,8 @@ export function WorldFrame({
           the battle→gallery transition — a structural hook, independent of
           whatever this element's own (CSS-Modules-hashed) class is. */}
       <main className={styles.outer} data-scroll-root>
-        {devPath && (
-          <header className={styles.siteHeader}>
-            <nav className={styles.devTag}>{devPath}</nav>
-          </header>
-        )}
-
         <div ref={worldContainerRef} className={clsx(styles.worldContainer, className)}>
           <WorldDecoration thin={decorationStrength === 'thin'} />
-
-          {(eyebrow ?? title ?? subtitle) !== undefined && (
-            <div className={styles.worldIntro}>
-              {eyebrow && <span className={styles.eyebrow}>{eyebrow}</span>}
-              {title && <h1>{title}</h1>}
-              {subtitle && <p>{subtitle}</p>}
-            </div>
-          )}
 
           {children}
 

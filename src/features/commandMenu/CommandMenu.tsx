@@ -22,21 +22,13 @@ export interface CommandMenuProps {
   soundEnabled: boolean
   reducedMotion: boolean
   events?: CommandMenuEvents
-  /** The battle screen shows a small per-row icon next to each move. On by default. */
-  showIcons?: boolean
 }
 
 function toEvent(move: MoveEntry, slotIndex: number, attackNumber: number): CommandMoveEvent {
   return { moveId: move.id, moveName: move.name, slotIndex, attackNumber }
 }
 
-export function CommandMenu({
-  targetRef,
-  soundEnabled,
-  reducedMotion,
-  events,
-  showIcons = true,
-}: CommandMenuProps) {
+export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: CommandMenuProps) {
   const { status, currentMoves, attackCount, reroll, commitAttack } = useCommandMenuController()
   const sound = useCommandSound(soundEnabled)
 
@@ -228,9 +220,8 @@ export function CommandMenu({
       // below, not a wind-up for it.
       anim.squeezeBand(bandRef.current, reducedMotion)
 
-      // What flies is the move's icon, not the whole row (showIcons off ->
-      // no icon element exists, so the row is the fallback flight source).
-      const fromEl = iconElsRef.current[i] ?? itemElsRef.current[i]
+      // What flies is the move's icon, not the whole row.
+      const fromEl = iconElsRef.current[i]
       const fxLayer = fxLayerRef.current
       if (!fromEl || !fxLayer) {
         attackContextRef.current = payload
@@ -373,17 +364,15 @@ export function CommandMenu({
                   <span className={styles.index} aria-hidden="true">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  {showIcons && (
-                    <MoveIcon
-                      ref={(el) => {
-                        iconElsRef.current[i] = el
-                      }}
-                      className={styles.icon}
-                      size={15}
-                      weight="bold"
-                      aria-hidden="true"
-                    />
-                  )}
+                  <MoveIcon
+                    ref={(el) => {
+                      iconElsRef.current[i] = el
+                    }}
+                    className={styles.icon}
+                    size={15}
+                    weight="bold"
+                    aria-hidden="true"
+                  />
                   <span className={styles.text}>
                     <span className={styles.name}>{move.name}</span>
                     <span className={styles.desc}>{move.shortDescription}</span>
