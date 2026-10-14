@@ -9,8 +9,10 @@ export interface IntroSeed {
 }
 
 const SEED_COUNT = 18
-const GOLDEN_ANGLE = 2.399963 // ラジアン——collapseHoles.ts自身の散布と同じひまわり/フィボナッチ螺旋の間隔
-const MAX_RADIUS_FRAC = 0.4 // 各シードの「中心」を、余白を含むdust用canvasの箱ではなく本体自身のシルエット内に収める
+// ラジアン。ひまわり（フィボナッチ）螺旋の間隔で、シードを偏りなく散らす。
+const GOLDEN_ANGLE = 2.399963
+// 各シードの中心を、余白を含むdust用canvasの箱ではなく本体のシルエット内に収める。
+const MAX_RADIUS_FRAC = 0.4
 
 /** 完全にrevealされた後、各シード円がどこまで成長するか（objectBoundingBoxに対する割合）——18個で本体を余裕を持って覆いきれる大きさ。 */
 export const MAX_SEED_RADIUS = 0.3

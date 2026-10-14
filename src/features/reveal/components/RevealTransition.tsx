@@ -77,7 +77,7 @@ export function RevealTransition({
     // （pointer-events: auto、不透明、全面）が入力ブロックの実体 —
     // 覆われた後は背後に何も操作可能なものが残らず、この時点で
     // 戦闘コンテンツ側にもクリックできるものはそもそも残っていない
-    // （CommandMenuは5回目のヒットで既に技一覧を隠している）。
+    // （撃破時点でコマンドメニューは無効化され、フェードアウトしている）。
     const prevOuterOverflow = outer?.style.overflow ?? ''
     const prevHtmlOverflow = document.documentElement.style.overflow
     if (outer) outer.style.overflow = 'hidden'

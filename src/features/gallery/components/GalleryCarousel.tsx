@@ -34,12 +34,10 @@ export function GalleryCarousel({
   const lastAppliedRef = useRef<{ index: number; mobile: boolean } | null>(null)
   const [introPlaying, setIntroPlaying] = useState(true)
 
-  // 正面+隣接（ring<=1）の読み込みが出揃うまで、残りのカードはsrcを
-  // 与えない（詳しくはGalleryCard自身のコメント参照）。全て決着
-  // （成功/失敗問わず）した時点で残りの読み込みを解禁する——初回表示の
-  // 帯域を独占させず、かつユーザーが操作を始める頃には裏で温まっている
-  // ようにするため。マウント時点のring構成を基準にした一度きりの判定
-  // なので、以降のナビゲーションでカウントをやり直す必要はない。
+  // 正面と隣接（ring<=1）の画像の読み込みが成功・失敗を問わず出揃うまで、
+  // 残りのカードにはsrcを与えない（理由はGalleryCardのコメント参照）。初回表示の
+  // 帯域を奪わず、操作を始める頃には裏で読み込みが進んでいるようにするため。
+  // マウント時点の並びで一度だけ判定するので、以降の移動では数え直さない。
   const prioritySettledCountRef = useRef(0)
   const priorityTotalRef = useRef(0)
   const [restLoadEnabled, setRestLoadEnabled] = useState(false)
@@ -235,15 +233,11 @@ function GalleryCard({
     <>
       <img
         className={styles.img}
-        // 登場演出はカード全員を一瞬center(x:0)に集めてからリングへ展開する
-        // ため、その間はloading="lazy"のビューポート近接判定が全カードを
-        // 「画面内」と誤判定してしまい、本来読み込むべきでない奥の
-        // カードまで一斉にフェッチされてしまう（GalleryGallery側で実測
-        // 済み）。ブラウザの判定に頼らず、呼び出し元がring（中心からの
-        // 距離）で「正面＋隣接1列」だけに絞ってsrcそのものを与えることで、
-        // 読み込み自体を確実に遅延させる。それらが出揃ったら
-        // onSettled経由で残り全カードのloadが解禁される（下のGalleryCarousel
-        // 側）ので、ユーザーが操作を始める頃には裏で読み込みが進んでいる。
+        // 登場演出は全カードを一瞬中央に集めてからリングへ広げるため、その間は
+        // loading="lazy"が全カードを「画面内」と判定し、奥のカードまで一斉に
+        // 読み込んでしまう。そこでブラウザの判定には頼らず、呼び出し元が
+        // 正面と隣接1列のカードにだけsrcを与え、それらが出揃ってから残りの
+        // 読み込みを許可する。
         src={load ? game.thumbnailSrc : undefined}
         alt={game.thumbnailAlt}
         loading={priority ? 'eager' : 'lazy'}

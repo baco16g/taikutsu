@@ -1,7 +1,4 @@
-/* WorldFrame自身のeyebrow/titleスロットが使うのと同じ左上の位置——
-   そのprop経由ではなくここで直接描画しているのは、この見出しが
-   battleフェーズ表示中だけ存在すべきで、ページ全体には存在すべきで
-   はないため。 */
+/* 戦闘画面の間だけ表示する見出し。World Containerの左上に置く。 */
 .battleHeading {
   position: absolute;
   z-index: 1;

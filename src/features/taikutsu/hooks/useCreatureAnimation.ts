@@ -30,10 +30,14 @@ const applyPathD = (el: SVGPathElement | null, d: string) => {
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 
-const WOBBLE_FADE_IN_DURATION = 0.6 // 中断後にアイドルwobbleを再び馴染ませるまでの秒数
-const HOVER_WOBBLE_BOOST = 0.6 // ホバー最大時のwobble振幅 = base * (1 + this)
-const HOVER_SPEED_BOOST = 0.55 // ホバー最大時のfloat/drift再生速度 = base * (1 + this)
-const HOVER_SCALE = 1.035 // ホバー最大時の全体スケール膨張
+// 攻撃で中断した後、アイドルwobbleを再び馴染ませるまでの秒数。
+const WOBBLE_FADE_IN_DURATION = 0.6
+// ホバー最大時のwobble振幅 = base * (1 + この値)。
+const HOVER_WOBBLE_BOOST = 0.6
+// ホバー最大時のfloat/drift再生速度 = base * (1 + この値)。
+const HOVER_SPEED_BOOST = 0.55
+// ホバー最大時の全体スケール。
+const HOVER_SCALE = 1.035
 
 /**
  * ある時刻（gsap.ticker time）における、各点ごとのアイドル半径オフセット。

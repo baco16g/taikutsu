@@ -8,7 +8,8 @@ export interface CollapseHole {
 }
 
 const HOLE_COUNT = 30
-const MAX_DIST = 108 // HP1の最大半径（約94）に余裕を持って収まる値
+// 穴を散らす最大距離。最後の一撃の時点の形（HP1、最大半径84）を余裕を持って上回る。
+const MAX_DIST = 108
 
 /**
  * 本体全体を覆う散布円。最後の一撃で成長するSVGマスクとして使う:

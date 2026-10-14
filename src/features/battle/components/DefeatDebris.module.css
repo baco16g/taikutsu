@@ -1,12 +1,8 @@
-/* 背景パネルはない——タ・イクツ自身のラベル（BattleStatusのisDefeated
-   状態）とコマンドパネル（BattleScreen.module.cssの.commandAnchor
-   .isDefeated）は、このまさに同じ`defeated`の切り替わりでフェード
-   アウトする。そのためこちらは画面中央でそれらがフェードアウトするのに
-   合わせてクロスフェードで現れ、別の不透明な「画面」へ切り替わる
-   ことはない（実際にギャラリーへ向けて全面を覆うのは、
-   DEFEAT_HOLD_MS（src/pages/homeSession.ts）後に始まるRevealTransitionのシート）。
-   純粋に演出用（下の破片フィールドのみ、テキストはない）なので
-   pointer-events:none。 */
+/* 背景パネルは持たない。BattleStatusのラベルとコマンドメニュー
+   （BattleScreen.module.cssの.commandAnchor.isDefeated）が同じ`defeated`の
+   切り替わりでフェードアウトするのに合わせて、破片がクロスフェードで現れる。
+   画面全体を覆うのは、DEFEAT_HOLD_MS（src/pages/homeSession.ts）後に始まる
+   RevealTransitionのシート。演出専用なのでpointer-events:none。 */
 .root {
   position: absolute;
   inset: 0;

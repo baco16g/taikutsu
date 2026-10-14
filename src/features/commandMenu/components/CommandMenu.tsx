@@ -48,18 +48,13 @@ export function CommandMenu({
 
   return (
     <div className={clsx(styles.root, isAttacking && styles.isAttacking)} ref={anim.rootRef}>
-      {/* ここに攻撃回数の表示はない — タ・イクツ自身のHPゲージ
-          （BattleStatus）が「残り何回の攻撃か」を示す唯一の場所。 */}
+      {/* 攻撃回数はここに表示しない。残り回数はBattleStatusのHPゲージだけが示す。 */}
       <header className={styles.zoneHeader}>
         <h2 className={styles.zoneTitle}>SKILL</h2>
       </header>
 
-      {/* 'complete'でもアンマウントしない（5回目のヒットは
-          useCommandMenuControllerのcommitAttackが示す通りcurrentMovesを
-          空にせずstatusだけ切り替えるため、ここには常に表示すべき
-          実在の6つがある）。以下の各ハンドラは全てstatus !== 'active'で
-          no-opになるので、最後の6つを残すのは見た目上の演出に過ぎず、
-          新たに操作可能な死んだUIが残るわけではない。 */}
+      {/* 5回目の攻撃の後も最後の6つを表示したまま残す（statusが'complete'に
+          なると、すべての行とボタンは無効になる）。 */}
       <div className={styles.listWrap} ref={anim.listWrapRef}>
         {/* 破れた紙のようなギザギザのband（clip-pathのpolygon）—
             行自体の左右端からはみ出して描画される。行ごとに1枚ではなく、

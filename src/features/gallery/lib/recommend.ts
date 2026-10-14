@@ -4,54 +4,29 @@ import { mulberry32 } from '../../../lib/prng'
 import type { GalleryConnection, GalleryGame } from '../types'
 
 /**
- * 実体のある推薦エンジン: プレイヤーが実際に選んだ技idから、
- * data/gameIntros.jsonに埋め込まれた`relatedMoves`（技ごとのstrong/medium）
- * のみを信号として表示するゲームを決める。
+ * ギャラリーに表示するゲームの推薦。判断材料は、data/gameIntros.jsonの各ゲームに
+ * 付いている`relatedMoves`（スキルとの結びつき strong/medium）のうちstrongだけ。
+ * docs/research/の関連データは同じ情報の別形式なので使っていない
+ * （理由はdocs/architecture.md）。
  *
- * `docs/research/gameMoveAssociations.json`（1080件の関連データで、その
- * `note`フィールド自身が`src/recommend.ts`を想定利用者としている研究成果物）
- * は検討した上で意図的に使わなかった。data/gameIntros.jsonと直接突き合わせた結果:
- * - `confidence`フィールドは`relevance`から1対1で導出されている
- *   （同じnoteによればstrong→high、medium→medium）— 追加のランキング信号はない。
- * - `grounds`フィールドは根拠となる引用テキストであり、スコアではない。
- * - gameIntros.jsonが実際に配信する全ゲームについて、両ファイルの
- *   moveId/relevanceの組は完全に一致する（プログラムで検証済み）。
- *   1080件と約1009件の差は、ランタイムにバンドルされるgameIntros.jsonに
- *   そもそも存在しない約70ゲーム分の関連データに過ぎない
- *   （どのみちthumbnail/intro/catchphraseがなく表示できない）。
- * つまり同じstrong/mediumデータを別の形で持っているだけで、かつ
- * 実行時には使いようのない出典テキストが付いているだけ——実質的に
- * 追加の判断材料を持つ上位互換ではない。組み込むと644KBの研究用
- * ファイル（あるいはその約70ゲーム分も含めるならさらに大きい
- * docs/research/gameIntros.full.json）を配信することになり、判断に
- * 寄与する効果はゼロ。既にバンドル済みでfixtureのデータ源でもある
- * gameIntros.json単体の方が良い選択。
+ * 10作品のうち最大5件は、選んだスキルのどれかとstrongで結びつくゲーム
+ * （strong-tie枠）、残りはどのスキルともstrongで結びつかないゲーム
+ * （discovery枠）。strong-tie枠はスキルごとに順番に1件ずつ引くので、候補の
+ * 多いスキルが枠を独占しない。候補が足りない分はdiscovery枠で埋め、返す件数は
+ * 常にTOTAL_GAME_COUNTになる。
  *
- * アルゴリズム（廃止済みfixtureが持っていた分割の考え方を踏襲）:
- * 返す10作品のうち最大5件（選んだ技の数と同じ）はプレイヤーが選んだ技との
- * 確実なstrongな結びつき（「strong-tie」枠）、残り5件は何の技とも強い
- * 結びつきを持たない「discovery」枠（セレンディピティ用）。strong-tie候補は
- * 選ばれた技ごとにラウンドロビンで引く（各技ごとの候補一覧は事前に
- * シード付きシャッフル済み）ことで、技ごとにちょうど1件ずつ割り当たり、
- * 特定の技が持つstrong-tieゲームの多さに引きずられて他の技が埋もれる
- * ことがない。対象の技に対するstrong-tie候補が足りない場合は、不足分を
- * discovery枠で単純に埋める——返却数は常にちょうど`TOTAL_GAME_COUNT`になる。
- *
- * 全体は選ばれた技id自体からシードする（本プロジェクト既存のPRNGである
- * src/lib/prng.tsのmulberry32経由）ため、同じ技の組み合わせは
- * 常に同じギャラリーを再現し（テスト/スナップショット向けに決定的）、
- * 違う組み合わせでは表示されるゲームが変わる。シードは順序に依存しない
- * （idは重複排除とソートを先に行う）——選んだ技の「組み合わせ」が結果を
- * 左右し、クリックした「順番」は影響しない。
+ * 乱数のシードは選んだスキルidの集合から作る（重複を除きソートしてから
+ * ハッシュする）。同じ組み合わせなら選んだ順番に関係なく同じ結果になり、
+ * 組み合わせが変わると表示されるゲームも変わる。
  */
 
 const GAMES_BY_ID = new Map<string, GameIntro>(GAME_INTROS.map((g) => [g.id, g]))
 const ALL_GAME_IDS: string[] = Array.from(GAMES_BY_ID.keys())
 
-/** ギャラリーが常に表示するゲーム数 — GalleryCarousel側のaria-labelの件数は`games.length`経由でこれと同期しており、別途ハードコードされた数値ではない。 */
+/** ギャラリーに表示するゲーム数。画面上の件数表示はこの定数ではなく、返した配列の長さから作られる。 */
 export const TOTAL_GAME_COUNT = 10
 
-/** `TOTAL_GAME_COUNT`のうちstrong-tie枠の上限。1セッションで選ぶ技の数（5）と一致させ、選んだ技それぞれに必ず1件ずつ割り当たるようにしている。残りはdiscovery枠（モジュール先頭のdocコメント参照）。 */
+/** `TOTAL_GAME_COUNT`のうちstrong-tie枠の上限。1セッションで選ぶスキルの数（5）と同じにして、選んだスキルに1件ずつ行き渡るようにしている。 */
 const STRONG_TIE_TARGET = 5
 
 function buildConnections(
@@ -183,9 +158,8 @@ export function recommendGames(chosenMoveIds: readonly string[]): GalleryGame[] 
   const discoveryPicks = shuffled(discoveryPool, rand).slice(0, discoveryNeeded)
 
   const selected = [...strongPicks, ...discoveryPicks]
-  // データセットがTOTAL_GAME_COUNTを下回った場合にのみ到達する分岐 —
-  // その縮退したケースでも、GalleryCarouselのaria-labelが前提とする
-  // 「常にちょうど6件」という契約を守る。
+  // strong-tie枠とdiscovery枠の候補を合わせてもTOTAL_GAME_COUNTに届かない
+  // 場合は、残りの全ゲームから補って件数を揃える。
   if (selected.length < TOTAL_GAME_COUNT) {
     const usedSet = new Set(selected)
     const filler = shuffled(

@@ -1,10 +1,7 @@
-/* ここで意図的にheight/min-heightを上書きしていない — World Containerは
-   battleフェーズと全く同様にintroフェーズでも自身のデフォルトサイズ
-   （height: min(82vh,880px); min-height:640px）を保つ。これにより引き継ぎを
-   跨いで枠自体がリサイズされることは決してない（そのリサイズ自体が、
-   アクター自身の位置/サイズtweenとは独立した、継ぎ目の見える原因の一つ
-   だった）。代わりに.introGridは、(今や一定になった) World Containerが
-   実際に持つ高さいっぱいに伸び、その中で自身のコンテンツを中央寄せする。 */
+/* World Containerの高さ（height: min(82vh,880px); min-height: 640px）は
+   イントロでも戦闘画面と同じままにし、ここでは上書きしない。画面の切り替えで
+   枠の大きさが変わると、タ・イクツの移動とは別に継ぎ目が見えてしまうため。
+   .introGridはその高さいっぱいに広がり、中身を縦中央に寄せる。 */
 .introGrid {
   position: relative;
   /* 独自のスタッキングコンテキスト。これにより下の::beforeを「この要素の
@@ -28,8 +25,8 @@
 }
 
 /* intro専用の背景（渋谷スクランブル交差点のライン画、OSM上に生成——
-   クレジットはWorldFrameの`note` prop経由）。元の書き出しは不透明な
-   白背景PNGなので、mix-blend-mode:multiplyでその白を--color-paperへ
+   クレジットはWorldFrameの`note` prop経由）。画像は白背景の不透明な
+   ものなので、mix-blend-mode:multiplyでその白を--color-paperへ
    ブレンドし、放射状のmask-imageで端をフェードさせている。クリーチャー
    ドック（右側）を中心にしているので、タイトル/本文のカラム（左側）は
    自然に明るく読みやすいまま保たれる。専用の::beforeにしている理由
@@ -255,23 +252,18 @@
 }
 
 @container world-outer (max-width: 799px) {
-  /* WorldFrame自身のモバイルブレークポイントが、battleフェーズも含めて
-     どのルートでもWorld Containerをheight:auto（コンテンツ駆動）へ
-     既に切り替えている——つまり上の.introGridのheight:100%はどのみち
-     そのコンテナ自身の（今やコンテンツサイズになった）自然な高さに
-     ピン留めされるだけ。この偶然に頼らないよう、ここで明示的にautoへ
-     リセットしている。 */
+  /* このブレークポイントではWorldFrameがWorld Containerをheight:auto
+     （中身に合わせる）に切り替えるため、上の.introGridのheight:100%は実質的に
+     効かない。それに頼らないよう、ここで明示的にautoにする。 */
   .introGrid {
     display: flex;
     flex-direction: column;
     height: auto;
-    /* デスクトップと違い、ここではWorld Containerがheight:auto
-       （頼れる中央寄せの余白がない）なので、上下のpaddingだけが
-       コンテンツをフレーム自身の装飾から離しておく唯一の手段。
-       上46pxは戦闘画面の.battleStatusAnchor（BattleScreen.module.css）のモバイルpaddingに合わせて
-       あり、フレーム上端の細線/コーナーノッチを避けるよう調整
-       されている。下は、スクリーントーン/slash装飾とその下のフッターに
-       対して余裕を持たせるため広めにしてある。 */
+    /* World Containerがheight:autoで中央寄せの余白がないため、上下の
+       paddingで中身を枠の装飾から離す。上は戦闘画面の.battleStatusAnchor
+       （BattleScreen.module.css）のモバイルpadding（46px）に近い値にして、
+       枠上端の細線と角の切り欠きを避ける。下はスクリーントーン/slash装飾と
+       その下のフッターのために広めに取る。 */
     padding: clamp(40px, 11vw, 52px) clamp(14px, 4vw, 22px) clamp(28px, 7vw, 40px);
   }
 
@@ -371,10 +363,8 @@
     order: 4;
   }
 
-  /* フル幅ではなく、コンテンツに寄り添うサイズ——自身のコンテンツに
-     サイズを合わせ、今や中央寄せになった上のtitle/bodyの下で中央
-     寄せする。フォームの送信ボタンのようにカラム幅いっぱいに伸ばす
-     のではない。 */
+  /* 幅いっぱいには伸ばさず中身に合わせ、中央寄せにしたtitle/bodyの下で
+     中央に置く。 */
   .startButton {
     width: fit-content;
     margin: 0 auto;
