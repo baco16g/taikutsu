@@ -4,7 +4,7 @@
   height: 100%;
   color: var(--color-ink);
   /* 外枠のborder/パネルはない——このゾーンは背後のhalo
-     （HomePage.module.cssの.commandAnchor::before）と一覧行自身の
+     （BattleScreen.module.cssの.commandAnchor::before）と一覧行自身の
      細い区切り線によって「世界の中の一箇所」として読め、カードの
      エッジとしては読まれない。 */
   padding: 10px 10px 4px 0;

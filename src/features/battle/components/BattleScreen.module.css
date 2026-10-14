@@ -1,0 +1,128 @@
+/* WorldFrame自身のeyebrow/titleスロットが使うのと同じ左上の位置——
+   そのprop経由ではなくここで直接描画しているのは、この見出しが
+   battleフェーズ表示中だけ存在すべきで、ページ全体には存在すべきで
+   はないため。 */
+.battleHeading {
+  position: absolute;
+  z-index: 1;
+  left: clamp(20px, 4.2%, 44px);
+  top: clamp(18px, 4%, 34px);
+}
+
+/* introの見出し自体（Dela Gothic Oneの「退屈を、／たおせ！」）と同じ
+   文言・書体を、introのはるかに大きいclamp()ではなく、この世界内の
+   見出しとしてより小さいスケールで使う。 */
+.battleHeading h1 {
+  margin: 10px 0 9px;
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1.32;
+  letter-spacing: -0.03em;
+  font-weight: 400;
+  font-family: 'Dela Gothic One', sans-serif;
+}
+
+/* 見出しの上の小さなモノスペースのkicker。イントロの見出し
+   （IntroScreen.module.css）と同じ書式。 */
+.eyebrowText {
+  font: 10px var(--font-mono);
+  letter-spacing: 0.15em;
+  color: rgba(20, 20, 20, 0.5);
+}
+
+/* [0, 100%]のフル範囲ではなく[185px, 100% - 40px]の範囲内で中央寄せ
+   している——185pxは上の見出し分の余地を確保し、40pxは下部の安全
+   マージンを確保する。これがないと、背が高いWorld Container（幅広で
+   背の低いビューポートはmin(82vh,880px)の上限へ高さを押し上げる）の
+   もとで、このアンカー自身のコンテンツ——幅38%・aspect-ratio:1の
+   ドック+キャプション/HP行——が、単純な中間点での中央寄せでは
+   HPバーがコンテナ下端にぴったり張り付くほど高くなり得る。等価な
+   導出: [185px, 100%-40px]の中間点 = ((185px-40px) + 100%) / 2 =
+   (145px + 100%) / 2。 */
+.battleStatusAnchor {
+  position: absolute;
+  z-index: 1;
+  /* 名前付きコンテナにしているのは、BattleStatus自身のcqwベースの
+     ドック幅が、このカラムの可変clamp()式を直接追従できるようにするため。 */
+  container-type: inline-size;
+  left: clamp(20px, 6%, 56px);
+  top: calc((145px + 100%) / 2);
+  transform: translateY(-50%);
+  width: clamp(210px, 38%, 490px);
+  text-align: center;
+}
+
+.commandAnchor {
+  position: absolute;
+  z-index: 1;
+  right: clamp(20px, 4.5%, 46px);
+  bottom: clamp(20px, 4.5%, 46px);
+  width: clamp(290px, 42%, 560px);
+  max-width: calc(100% - 40px);
+  transition: opacity 0.4s ease;
+}
+
+.commandAnchor.isDefeated {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.commandAnchor.isReducedMotion {
+  transition-duration: 0.15s;
+}
+
+.commandAnchor::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -14px -26px -8px -30px;
+  background: linear-gradient(
+    103deg,
+    transparent 0%,
+    var(--color-paper) 19%,
+    var(--color-paper) 66%,
+    transparent 100%
+  );
+  opacity: 0.95;
+  clip-path: polygon(15% 0, 98% 0, 100% 88%, 79% 100%, 0 100%);
+  pointer-events: none;
+}
+
+@container world-outer (max-width: 799px) {
+  .battleHeading {
+    left: 18px;
+    top: 18px;
+  }
+
+  .battleHeading .eyebrowText {
+    display: none;
+  }
+
+  .battleHeading h1 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .battleStatusAnchor {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: auto;
+    padding: 46px 0 4px;
+  }
+
+  .commandAnchor {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    max-width: none;
+    margin: 0 14px 10px;
+  }
+
+  .commandAnchor::before {
+    inset: -10px -14px -6px -14px;
+    clip-path: none;
+  }
+}

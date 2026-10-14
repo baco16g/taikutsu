@@ -1,19 +1,16 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import clsx from 'clsx'
 import { SpeakerHighIcon, SpeakerXIcon } from '@phosphor-icons/react'
 import { WorldFrame } from '../components/WorldFrame/WorldFrame'
-import { CommandMenu } from '../features/commandMenu/components/CommandMenu'
-import { ATTACK_LIMIT } from '../features/commandMenu/lib/moves'
+import { BattleScreen } from '../features/battle/components/BattleScreen'
 import { useCommandSound } from '../features/commandMenu/hooks/useCommandSound'
 import type { LandedMove } from '../features/commandMenu/types'
 import { IntroActor } from '../features/intro/components/IntroActor'
+import { IntroScreen } from '../features/intro/components/IntroScreen'
 import { useIntroPhase } from '../features/intro/hooks/useIntroPhase'
-import { INTRO_COPY } from '../features/intro/data/introCopy'
 import type { TaikutsuCreatureHandle } from '../features/taikutsu/components/TaikutsuCreature'
 import type { Hp } from '../features/taikutsu/lib/shapeStates'
-import { BattleStatus } from '../features/battle/components/BattleStatus/BattleStatus'
-import { DefeatDebris } from '../features/battle/components/DefeatDebris'
 import { RevealTransition } from '../features/reveal/components/RevealTransition'
 import { GameGallery } from '../features/gallery/components/GameGallery'
 import type { GalleryMove } from '../features/gallery/types'
@@ -56,12 +53,6 @@ export function HomePage() {
   const [hitSignal, setHitSignal] = useState(0)
   const [impactCount, setImpactCount] = useState(0)
   const chosenMovesRef = useRef<GalleryMove[]>([])
-
-  // 表示上のHPバーを即座に動かすのはimpactCount（CommandMenuのonImpactが
-  // 発火した瞬間、アイコン着弾のタイミングで増える）であり、下の
-  // onHpChangeではない——onHpChangeはクリーチャー自身の約0.5秒の
-  // モーフアニメーションが追いつき終わった時点で初めて発火する。
-  const hpRemaining = (ATTACK_LIMIT - impactCount) as Hp
 
   const [defeated, setDefeated] = useState(false)
   const [revealActive, setRevealActive] = useState(false)
@@ -170,57 +161,14 @@ export function HomePage() {
         }
       >
         {showIntro && (
-          <section
-            className={styles.introGrid}
-            ref={intro.introSectionRef}
-            inert={introInert || undefined}
-          >
-            <div className={styles.introTitle}>
-              <span className={clsx(styles.eyebrowText, styles.introEyebrow)}>
-                {INTRO_COPY.eyebrow}
-              </span>
-              <h1>
-                {INTRO_COPY.title.map((line, i) => (
-                  <span key={i}>{line}</span>
-                ))}
-              </h1>
-            </div>
-
-            <div className={styles.creatureCol}>
-              <div className={styles.creatureDock} ref={intro.introDockRef} />
-              <p className={styles.creatureCaption}>
-                {INTRO_COPY.creatureKicker}
-                <strong>{INTRO_COPY.creatureName}</strong>
-              </p>
-            </div>
-
-            <div className={styles.introCopy}>
-              {INTRO_COPY.body.map((lines, i) => (
-                <p key={i}>
-                  {lines.map((line, j) => (
-                    <Fragment key={j}>
-                      {j > 0 && <br />}
-                      {line}
-                    </Fragment>
-                  ))}
-                </p>
-              ))}
-            </div>
-
-            <div className={styles.introAction}>
-              <button
-                type="button"
-                className={styles.startButton}
-                onClick={intro.requestStart}
-                onPointerEnter={handleStartHover}
-                onFocus={handleStartHover}
-                disabled={intro.pendingStart}
-              >
-                {INTRO_COPY.cta}
-                <span aria-hidden="true">↗</span>
-              </button>
-            </div>
-          </section>
+          <IntroScreen
+            sectionRef={intro.introSectionRef}
+            creatureDockRef={intro.introDockRef}
+            inert={introInert}
+            startPending={intro.pendingStart}
+            onStart={intro.requestStart}
+            onStartHover={handleStartHover}
+          />
         )}
 
         {showBattle && (
@@ -230,44 +178,15 @@ export function HomePage() {
             inert={battleInert || undefined}
           >
             {!showGallery && (
-              <>
-                <div className={styles.battleHeading}>
-                  <span className={styles.eyebrowText}>A SMALL CHANGE IN A BORING WORLD.</span>
-                  <h1 id="intro-battle-title" tabIndex={-1}>
-                    退屈を、たおせ！
-                  </h1>
-                </div>
-
-                <section className={styles.battleStatusAnchor}>
-                  <BattleStatus
-                    creatureDockRef={intro.battleDockRef}
-                    creatureKicker={INTRO_COPY.creatureKicker}
-                    creatureName={INTRO_COPY.creatureName}
-                    hpRemaining={hpRemaining}
-                    attackLimit={ATTACK_LIMIT}
-                    defeated={defeated}
-                    reducedMotion={reducedMotion}
-                  />
-                </section>
-
-                <section
-                  className={clsx(
-                    styles.commandAnchor,
-                    defeated && styles.isDefeated,
-                    reducedMotion && styles.isReducedMotion,
-                  )}
-                  aria-label="スキルコマンドメニュー"
-                >
-                  <CommandMenu
-                    targetRef={intro.wrapperRef}
-                    soundEnabled={soundEnabled}
-                    reducedMotion={reducedMotion}
-                    onImpact={handleImpact}
-                  />
-                </section>
-
-                {defeated && <DefeatDebris reducedMotion={reducedMotion} />}
-              </>
+              <BattleScreen
+                creatureDockRef={intro.battleDockRef}
+                creatureTargetRef={intro.wrapperRef}
+                landedCount={impactCount}
+                defeated={defeated}
+                reducedMotion={reducedMotion}
+                soundEnabled={soundEnabled}
+                onImpact={handleImpact}
+              />
             )}
 
             {showGallery && (

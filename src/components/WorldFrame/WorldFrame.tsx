@@ -33,7 +33,7 @@ export interface WorldFrameProps {
   /** 枠内左下の小さなタグライン——例: intro画面の背景画像に必要な
       「© OpenStreetMap contributors」のクレジット表示（ODbLの要求で、
       この派生画像を表示している間は常に見える状態を保つ必要がある。
-      残りの経緯はHomePage.module.cssのintro背景レイヤーに関する
+      残りの経緯はIntroScreen.module.cssのintro背景レイヤーに関する
       コメント参照）。 */
   note?: ReactNode
   /** <main>の外側、ビューポートに固定して描画される——例: サウンドトグル。 */

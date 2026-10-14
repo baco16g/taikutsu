@@ -12,7 +12,7 @@
      存在しない。 */
   aspect-ratio: 1;
   /* vwではなくcqw: 位置決め用ラッパー自身の実際のカラム幅
-     （HomePageがそこにcontainer-type:inline-sizeを設定している）を
+     （BattleScreenがそこにcontainer-type:inline-sizeを設定している）を
      基準にサイズを決める。これにより、独立して調整された、ずれ得る
      もう1つのビューポート相対の式ではなく、そのカラムの可変clamp()式が
      どのビューポート幅でどう解決されようとクリーチャーはそれに
