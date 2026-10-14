@@ -201,6 +201,9 @@
   .root {
     --card-w: min(74vw, 320px);
     gap: 4px;
+    /* 見出しとの間（GameGallery.module.cssの.root gap: 26px）を
+       約2/3に詰める。カルーセル末尾（ナビ行）側の間隔には影響しない。 */
+    margin-top: -9px;
   }
 
   .viewport {
