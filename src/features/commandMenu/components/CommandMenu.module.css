@@ -26,7 +26,7 @@
 .zoneTitle {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 900;
   letter-spacing: 0.02em;
 }
@@ -145,7 +145,7 @@
   z-index: 1;
   isolation: isolate;
   width: 100%;
-  min-height: 52px;
+  min-height: 60px;
   display: grid;
   grid-template-columns: 20px 20px 1fr 18px;
   align-items: center;
@@ -181,7 +181,7 @@
 
 .index {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   opacity: 0.5;
   transition: opacity 0.15s ease;
@@ -200,7 +200,7 @@
 
 .name {
   display: inline-block;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.005em;
   line-height: 1.25;
@@ -216,7 +216,7 @@
    追従する。 */
 .desc {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.35;
   color: rgba(20, 20, 20, 0.6);
   white-space: normal;
@@ -357,15 +357,15 @@
   }
 
   .cmd {
-    min-height: 58px;
+    min-height: 66px;
   }
 
   .name {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .zoneTitle {
-    font-size: 22px;
+    font-size: 26px;
   }
 }
 
