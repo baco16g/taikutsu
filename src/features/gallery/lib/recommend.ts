@@ -104,7 +104,7 @@ function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryG
     name: game.name,
     catchphrase: game.catchphrase,
     intro: game.intro,
-    thumbnailSrc: `/thumbnails/${game.thumbnail.localFile}`,
+    thumbnailSrc: `${import.meta.env.BASE_URL}thumbnails/${game.thumbnail.localFile}`,
     thumbnailAlt: `「${game.name}」のキービジュアル`,
     sourceUrl: game.sourceUrl,
     connections: buildConnections(game, chosenMoveIds),
