@@ -217,7 +217,7 @@
   display: block;
   font-size: 14px;
   line-height: 1.35;
-  color: rgba(20, 20, 20, 0.6);
+  color: var(--color-ink-muted);
   white-space: normal;
   overflow-wrap: break-word;
   transition: color 0.15s ease;
@@ -265,9 +265,23 @@
    世界の背景が最も賑やかな場所（密なスクリーントーン+斜めのslash
    楔形）にあり、半透明のテキストを直接重ねると読みにくい。自前の不透明な
    背景を持たせることで、背後に何があってもコントラストを保つ。
-   BattleStatusのHPラベルバッジと同じ理由。 */
+   BattleStatusのHPラベルバッジと同じ理由。
+   押せる範囲（ボタン）は高さ44pxにし、見た目のタグ（.rerollLabel、高さ約32px）は
+   その中に置く。上下の負のマージンで、行の高さはタグの分だけに保つ。 */
 .reroll {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -6px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rerollLabel {
   background: var(--color-paper);
   border: 1px solid rgba(20, 20, 20, 0.55);
   padding: 6px 12px;
@@ -276,14 +290,13 @@
   font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--color-ink);
-  cursor: pointer;
   /* .cmdと同じ傾き。これによりこの要素が隣で完全に水平な異質な存在
      としてではなく、同じ要素群の一部として読める。 */
   transform: rotate(-0.45deg);
   transform-origin: 50% 50%;
 }
 
-.reroll:hover:not(:disabled) {
+.reroll:hover:not(:disabled) .rerollLabel {
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-paper);
@@ -292,6 +305,16 @@
 .reroll:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* フォーカスの輪はボタンの押せる範囲ではなく、見た目のタグに沿わせる。 */
+.reroll:focus-visible {
+  outline: none;
+}
+
+.reroll:focus-visible .rerollLabel {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
 }
 
 /* ---------- 攻撃飛翔中の状態 ---------- */

@@ -23,7 +23,7 @@
 .eyebrowText {
   font: 10px var(--font-mono);
   letter-spacing: 0.15em;
-  color: rgba(20, 20, 20, 0.5);
+  color: var(--color-ink-muted);
 }
 
 /* [0, 100%]のフル範囲ではなく[185px, 100% - 40px]の範囲内で中央寄せ

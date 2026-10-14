@@ -97,7 +97,7 @@
 .eyebrowText {
   font: 10px var(--font-mono);
   letter-spacing: 0.15em;
-  color: rgba(20, 20, 20, 0.5);
+  color: var(--color-ink-muted);
 }
 
 .introEyebrow {

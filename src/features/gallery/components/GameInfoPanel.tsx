@@ -69,7 +69,7 @@ export function GameInfoPanel({ game, reducedMotion, introSettled }: GameInfoPan
     <div className={styles.root} ref={rootRef}>
       <div className={styles.deco} aria-hidden="true" />
 
-      <h3 className={styles.title}>{displayedGame.name}</h3>
+      <h2 className={styles.title}>{displayedGame.name}</h2>
       <p className={styles.catch}>{displayedGame.catchphrase}</p>
       <p className={styles.intro}>{displayedGame.intro}</p>
 

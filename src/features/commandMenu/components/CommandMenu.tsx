@@ -126,7 +126,7 @@ export function CommandMenu({
           onClick={reroll}
           disabled={isAttacking || status !== 'active'}
         >
-          ほかのスキルを見る
+          <span className={styles.rerollLabel}>ほかのスキルを見る</span>
         </button>
       </div>
 

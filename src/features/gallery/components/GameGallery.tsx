@@ -38,13 +38,13 @@ export function GameGallery({ reducedMotion, chosenMoves, onReplay }: GameGaller
     <section className={styles.root} aria-labelledby="gallery-heading-title">
       <header className={clsx(styles.heading, !reducedMotion && styles.isAnimated)}>
         <p className={styles.kicker}>YOUR NEXT PLAY.</p>
-        <h2 className={styles.title} id="gallery-heading-title" tabIndex={-1}>
+        <h1 className={styles.title} id="gallery-heading-title" tabIndex={-1}>
           退屈はもう終わり。
           <br />
           次に遊ぶゲームを、
           <br />
           見つけにいこう！
-        </h2>
+        </h1>
         <p className={styles.sub}>
           あなたが選んだ{chosenMoves.length}つのスキルから、
           {isMobile && <br />}

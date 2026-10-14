@@ -3,6 +3,9 @@
   --color-ink: #141414;
   --color-paper: #f3f1ea;
   --color-page-background: #efece4;
+  /* 補助的な小さい文字の色。紙色の背景（paper、page-background）の上で
+     WCAG 2.2 AA のコントラスト比 4.5:1 を余裕をもって超える（約5.3〜5.5:1）。 */
+  --color-ink-muted: rgba(20, 20, 20, 0.65);
   --color-accent: #c81e2c;
 
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;

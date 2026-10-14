@@ -25,7 +25,7 @@
   margin: 16px 0 6px;
   font-size: 12px;
   letter-spacing: 0.14em;
-  color: rgba(20, 20, 20, 0.5);
+  color: var(--color-ink-muted);
   transition: opacity 0.4s ease;
 }
 
@@ -55,7 +55,7 @@
   margin-top: 8px;
   font: 10px var(--font-mono);
   letter-spacing: 0.16em;
-  color: rgba(20, 20, 20, 0.4);
+  color: var(--color-ink-muted);
 }
 
 /* 画面上で唯一の「残りN/5攻撃」の表示。 */

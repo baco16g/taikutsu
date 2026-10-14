@@ -130,8 +130,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   background: var(--color-page-background);
   border: 1px solid var(--color-ink);
   color: var(--color-ink);
@@ -160,32 +160,49 @@
 .dots {
   display: flex;
   align-items: center;
-  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+/* 押せる範囲（ボタン）は幅24px・高さ44pxにし、見た目の点（::before、9px）は
+   その中央に描く。点どうしの間隔もこのボタンの幅で決まる。 */
 .dot {
-  width: 9px;
-  height: 9px;
+  position: relative;
+  width: 24px;
+  height: 44px;
   padding: 0;
-  border: 1px solid rgba(20, 20, 20, 0.5);
+  border: 0;
   background: transparent;
-  border-radius: 50%;
   cursor: pointer;
 }
 
-.dot:hover:not(:disabled) {
+.dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 9px;
+  height: 9px;
+  margin: auto;
+  border: 1px solid rgba(20, 20, 20, 0.5);
+  border-radius: 50%;
+}
+
+.dot:hover:not(:disabled)::before {
   border-color: var(--color-ink);
 }
 
+/* フォーカスの輪はボタンの押せる範囲ではなく、見た目の点に沿わせる。 */
 .dot:focus-visible {
+  outline: none;
+}
+
+.dot:focus-visible::before {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
 
-.dot.isActive {
+.dot.isActive::before {
   background: var(--color-ink);
   border-color: var(--color-ink);
 }
@@ -209,13 +226,32 @@
     height: calc(var(--card-h) * 1.5);
   }
 
+  /* 押せる範囲（矢印44px、点24px）を保ったまま1行には収まらないので、
+     矢印を1行目、点を2行目に並べる。 */
   .controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0;
     margin-top: calc(var(--card-h) * -0.25 + 16px);
   }
 
-  .nav {
-    width: 34px;
-    height: 34px;
+  .dots {
+    order: 1;
+    flex-basis: 100%;
+    justify-content: center;
+  }
+}
+
+/* 10個の点（幅240px）が1行に収まらない画面では、5個ずつ2行に並べる。行の間が
+   空きすぎないよう、点の押せる範囲の高さはWCAGの最小値の24pxにする。 */
+@media (max-width: 359px) {
+  .dots {
+    flex-wrap: wrap;
+    max-width: calc(24px * 5);
+  }
+
+  .dot {
+    height: 24px;
   }
 }
 

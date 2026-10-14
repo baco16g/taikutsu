@@ -259,7 +259,7 @@
   gap: 12px;
   font: 10px var(--font-mono);
   letter-spacing: 0.1em;
-  color: rgba(20, 20, 20, 0.45);
+  color: var(--color-ink-muted);
 }
 
 .worldNote span {
