@@ -15,7 +15,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(#141414 1px, transparent 1.4px);
+  background-image: radial-gradient(#141414 1px, transparent 2px);
   background-size: 15px 15px;
   opacity: 0.035;
   pointer-events: none;
@@ -95,7 +95,7 @@
   gap: 10px;
   appearance: none;
   background: transparent;
-  border: 1.5px solid var(--color-ink);
+  border: 1px solid var(--color-ink);
   color: var(--color-ink);
   font-size: 15px;
   font-weight: 800;

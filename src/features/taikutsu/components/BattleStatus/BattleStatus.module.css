@@ -77,9 +77,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px 3px;
+  padding: 4px 8px;
   margin-right: 10px;
-  border: 1.5px solid var(--color-ink);
+  border: 1px solid var(--color-ink);
   background: transparent;
   font: 800 14px var(--font-mono);
   letter-spacing: 0.1em;
@@ -126,7 +126,7 @@
   }
 
   .hpLabel {
-    padding: 2px 6px 3px;
+    padding: 4px 6px;
     margin-right: 6px;
     font-size: 12px;
   }
