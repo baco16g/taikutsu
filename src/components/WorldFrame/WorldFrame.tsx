@@ -21,8 +21,6 @@ function WorldDecoration({ thin }: { thin: boolean }) {
       <div className={styles.frameLeft} />
       <div className={styles.frameRight} />
       <div className={styles.frameBottom} />
-      <div className={styles.frameCut} />
-      <div className={styles.frameCutSecondary} />
       <div className={clsx(styles.tone, styles.toneFine)} />
       <div className={clsx(styles.tone, styles.toneMedium)} />
       <div className={clsx(styles.tone, styles.toneDense)} />

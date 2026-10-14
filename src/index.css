@@ -23,6 +23,15 @@ body,
   height: 100%;
 }
 
+html {
+  /* スクロールバーが実際に表示されているかどうかに関わらずその幅を
+     確保しておくことで、WorldFrame.module.cssの.outerがもはや内部スクロール
+     せず（align-items:centerで中身がページ全体の高さまで伸びる）ドキュメント
+     自体がスクロール先になった今も、battle→galleryのreveal遷移がoverflowを
+     auto/hiddenで切り替える際にコンテンツが横にずれることがない。 */
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family:

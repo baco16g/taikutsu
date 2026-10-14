@@ -1,5 +1,6 @@
 .page {
   display: flex;
+  align-items: center;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--color-page-background);
@@ -22,13 +23,6 @@
   background: var(--color-page-background);
   padding: clamp(18px, 2.6vh, 30px) clamp(20px, 4vw, 64px) clamp(14px, 2.4vh, 24px);
   overflow-x: hidden;
-  overflow-y: auto;
-  /* スクロールバーが実際に表示されているかどうかに関わらずその幅を
-     確保しておくことで、overflow-yをauto/hidden間で切り替えても
-     （例: battle→galleryのrevealが遷移中にスクロールをロックする場合）
-     このカラムのコンテンツがスクロールバーの幅ぶん水平にずれることが
-     決してない。 */
-  scrollbar-gutter: stable;
   /* 下の横並び/スタック切り替え用の名前付きコンテナ。このコンポーネント
      自身のCSSと、同じ実コンテンツ幅でレイアウトを切り替える必要がある
      各画面のコンテンツCSS（例: HomePage.module.css）の両方で共有される。
@@ -194,36 +188,6 @@
   border-bottom: 1px dashed rgba(20, 20, 20, 0.5);
 }
 
-.frameCut {
-  position: absolute;
-  left: -8px;
-  top: 16px;
-  width: 54px;
-  height: 3px;
-  background: var(--color-ink);
-  transform: rotate(-45deg);
-}
-
-.frameCut::after {
-  content: '';
-  position: absolute;
-  width: 30px;
-  height: 9px;
-  left: 25px;
-  top: -8px;
-  background: var(--color-ink);
-}
-
-.frameCutSecondary {
-  position: absolute;
-  right: -7px;
-  top: 72%;
-  width: 50px;
-  height: 4px;
-  background: var(--color-ink);
-  transform: rotate(-45deg);
-}
-
 /* スクリーントーン——密度の異なる3層。それぞれ独自の楔形にクリップ
    され右下に配置されているので、密度はその角に向かって集中し、
    平坦で均一なパターンにはならず他の場所は控えめなまま。 */
@@ -234,13 +198,13 @@
   background-image: radial-gradient(
     circle,
     rgba(52, 52, 49, 0.9) var(--dot-radius),
-    transparent calc(var(--dot-radius) + 0.2px)
+    transparent calc(var(--dot-radius) + 1px)
   );
   background-size: var(--dot-space) var(--dot-space);
 }
 
 .toneFine {
-  --dot-radius: 0.6px;
+  --dot-radius: 1px;
   --dot-space: 5px;
   width: 65%;
   height: 75%;
@@ -251,7 +215,7 @@
 }
 
 .toneMedium {
-  --dot-radius: 0.85px;
+  --dot-radius: 1px;
   --dot-space: 4px;
   width: 55%;
   height: 84%;
@@ -370,24 +334,9 @@
     height: 90px;
   }
 
-  .frameCut {
-    width: 32px;
-    left: -6px;
-    top: 10px;
-    height: 2px;
-  }
-
-  .frameCut::after {
-    width: 13px;
-    height: 5px;
-    left: 20px;
-    top: -4px;
-  }
-
   .frameLeft::after,
   .frameRight,
   .frameBottom,
-  .frameCutSecondary,
   .horizon,
   .toneMedium {
     display: none;
