@@ -4,11 +4,12 @@
 
 ## 公開ページ
 
-GitHub Pages で公開しています。`main` ブランチへの push で [.github/workflows/deploy-pages.yml](./.github/workflows/deploy-pages.yml) がデプロイします。
+GitHub Pages で公開しています。`main` ブランチへの push で [.github/workflows/deploy-pages.yml](./.github/workflows/deploy-pages.yml) が2つをまとめてデプロイします。
 
-| ページ           | URL                                 | 内容                     |
-| ---------------- | ----------------------------------- | ------------------------ |
-| アプリケーション | https://baco16g.github.io/taikutsu/ | 「退屈を、たおせ！」本体 |
+| ページ           | URL                                      | 内容                                              |
+| ---------------- | ---------------------------------------- | ------------------------------------------------- |
+| アプリケーション | https://baco16g.github.io/taikutsu/      | 「退屈を、たおせ！」本体                          |
+| ドキュメント     | https://baco16g.github.io/taikutsu/docs/ | `docs/` 配下の文書を VitePress でサイト化したもの |
 
 ## ドキュメント
 
@@ -39,3 +40,6 @@ npm ci
 | `npm run lint` / `npm run lint:fix`       | ESLint                                            |
 | `npm run format` / `npm run format:check` | Prettier                                          |
 | `npm test`                                | Vitest（単体テスト）を1回実行                     |
+| `npm run docs:dev`                        | ドキュメントサイトの開発サーバーを起動            |
+| `npm run docs:build`                      | ドキュメントサイトの静的ビルド                    |
+| `npm run docs:preview`                    | ドキュメントサイトのビルドをローカルで確認        |

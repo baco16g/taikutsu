@@ -11,7 +11,10 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -36,10 +39,13 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
     "jsdom": "^29.1.1",
+    "mermaid": "^11.17.2",
     "prettier": "^3.9.10",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^8.3.0",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17",
     "vitest": "^5.0.4"
   }
 }

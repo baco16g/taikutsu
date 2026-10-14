@@ -27,15 +27,24 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - run: npm run docs:build
 
-      - name: Add SPA fallback for direct-link refreshes
-        run: cp dist/index.html dist/404.html
+      # アプリを /taikutsu/、ドキュメントを /taikutsu/docs/ として1つのサイトにまとめる。
+      # 404.html はアプリのURLを直接開いて再読み込みしたときの受け皿。
+      - name: Assemble combined Pages site
+        run: |
+          set -euo pipefail
+          rm -rf site
+          mkdir -p site
+          cp -r dist/. site/
+          cp -r docs/.vitepress/dist site/docs
+          cp site/index.html site/404.html
 
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build

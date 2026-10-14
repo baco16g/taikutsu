@@ -8,7 +8,14 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig(
   {
-    ignores: ['dist', 'coverage', 'node_modules'],
+    ignores: [
+      'dist',
+      'coverage',
+      'node_modules',
+      'site',
+      'docs/.vitepress/dist',
+      'docs/.vitepress/cache',
+    ],
   },
   {
     files: ['src/**/*.{ts,tsx}'],
@@ -43,7 +50,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['vite.config.ts'],
+    files: ['vite.config.ts', 'docs/.vitepress/**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked, prettierConfig],
     languageOptions: {
       ecmaVersion: 2023,
