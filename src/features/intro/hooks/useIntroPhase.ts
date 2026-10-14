@@ -295,7 +295,11 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     moveTweenRef.current?.kill()
     clearSettleTimer()
     if (introSectionRef.current) gsap.set(introSectionRef.current, { opacity: 1 })
-    setPhase('arrival')
+    // battle/galleryから戻る場合、introSection（とintroDockRef）はこの時点では
+    // まだDOMに存在しない — phaseの変更をflushSyncでコミットさせてから
+    // startFormationを呼ぶことで、beginMoveがbattleDockRefに対して行って
+    // いるのと同じ理由で、repaintToDockが実在するdockを計測できるようにする。
+    flushSync(() => setPhase('arrival'))
     startFormation()
   }, [clearSettleTimer, startFormation])
 

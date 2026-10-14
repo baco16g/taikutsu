@@ -38,7 +38,7 @@ describe('recommendGames', () => {
     expect(recommendGames(['NOT_A_REAL_MOVE_ID'])).toHaveLength(TOTAL_GAME_COUNT)
   })
 
-  it('never returns a duplicate game across the 6 slots', () => {
+  it('never returns a duplicate game across the slots', () => {
     const games = recommendGames(DEFAULT_MOVE_IDS)
     expect(new Set(games.map((g) => g.id)).size).toBe(games.length)
   })

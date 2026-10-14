@@ -29,14 +29,14 @@ import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
  * gameIntros.json単体の方が良い選択。
  *
  * アルゴリズム（廃止済みfixtureが持っていた分割の考え方を踏襲）:
- * 返す6作品のうち最大4件はプレイヤーが選んだいずれかの技との確実な
- * strongな結びつき（「strong-tie」枠）、残りは何の技とも強い結びつきを
- * 持たない「discovery」枠（セレンディピティ用）。strong-tie候補は選ばれた
- * 技ごとにラウンドロビンで引く（各技ごとの候補一覧は事前にシード付き
- * シャッフル済み）ことで、4枠がたまたま最も多くのstrong-tieゲームを
- * 持つ技に偏らず複数の技へ分散する。対象の技に対するstrong-tie候補が
- * 4件に満たない場合は、不足分をdiscovery枠で単純に埋める——返却数は
- * 常にちょうど`TOTAL_GAME_COUNT`になる。
+ * 返す10作品のうち最大5件（選んだ技の数と同じ）はプレイヤーが選んだ技との
+ * 確実なstrongな結びつき（「strong-tie」枠）、残り5件は何の技とも強い
+ * 結びつきを持たない「discovery」枠（セレンディピティ用）。strong-tie候補は
+ * 選ばれた技ごとにラウンドロビンで引く（各技ごとの候補一覧は事前に
+ * シード付きシャッフル済み）ことで、技ごとにちょうど1件ずつ割り当たり、
+ * 特定の技が持つstrong-tieゲームの多さに引きずられて他の技が埋もれる
+ * ことがない。対象の技に対するstrong-tie候補が足りない場合は、不足分を
+ * discovery枠で単純に埋める——返却数は常にちょうど`TOTAL_GAME_COUNT`になる。
  *
  * 全体は選ばれた技id自体からシードする（本プロジェクト既存のPRNGである
  * src/features/taikutsu/lib/prng.tsのmulberry32経由）ため、同じ技の組み合わせは
@@ -70,10 +70,10 @@ const GAMES_BY_ID = new Map<string, RawGame>(
 const ALL_GAME_IDS: string[] = Array.from(GAMES_BY_ID.keys())
 
 /** ギャラリーが常に表示するゲーム数 — GalleryCarousel側のaria-labelの件数は`games.length`経由でこれと同期しており、別途ハードコードされた数値ではない。 */
-export const TOTAL_GAME_COUNT = 6
+export const TOTAL_GAME_COUNT = 10
 
-/** `TOTAL_GAME_COUNT`のうちstrong-tie枠の上限。残りはdiscovery枠（モジュール先頭のdocコメント参照）。 */
-const STRONG_TIE_TARGET = 4
+/** `TOTAL_GAME_COUNT`のうちstrong-tie枠の上限。1セッションで選ぶ技の数（5）と一致させ、選んだ技それぞれに必ず1件ずつ割り当たるようにしている。残りはdiscovery枠（モジュール先頭のdocコメント参照）。 */
+const STRONG_TIE_TARGET = 5
 
 /** 実セッションが存在しない場合に使う、デモ/デフォルト用の選択技セット（recommendGamesの`chosenMoveIds`パラメータ解説を参照）。 */
 const DEFAULT_CHOSEN_MOVE_IDS = ['C01', 'C13', 'C17', 'C21', 'C27']

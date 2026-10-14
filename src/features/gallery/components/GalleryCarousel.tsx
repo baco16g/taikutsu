@@ -39,7 +39,6 @@ export function GalleryCarousel({
 
   const justDraggedRef = useGalleryDrag(trackRef, {
     disabled: introPlaying,
-    reducedMotion,
     thresholdPx: isMobile ? 46 : 70,
     onCommit: (direction) => {
       if (direction !== 0) step(direction)

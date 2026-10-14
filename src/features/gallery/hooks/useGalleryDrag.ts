@@ -7,18 +7,19 @@ gsap.registerPlugin(Draggable)
 
 export interface UseGalleryDragOptions {
   disabled: boolean
-  reducedMotion: boolean
   /** リリースを「タップ」ではなく「ページ送り」とみなすために必要な、トラックの最低移動量（px）。 */
   thresholdPx: number
   onCommit: (direction: -1 | 0 | 1) => void
 }
 
 /**
- * GSAP Draggableをカードトラックへ直接バインドする: トラックをドラッグ
- * すること自体がカルーセルの移動なので、手動のオフセット管理は不要——
- * Draggableがポインタの動きに合わせてトラックのxをライブに設定して
- * くれる。このhookが決めているのは、リリース時にドラッグがページ送りの
- * しきい値を超えたかどうかと、どちらの場合もトラックを0へ戻すことだけ。
+ * スワイプのジェスチャー判定だけをトラックに後付けする: 実際にドラッグ
+ * されるのは画面外に浮かせた不可視のプロキシ要素で、GSAP
+ * Draggableの`trigger`オプション経由でトラック上のポインタ操作を拾い、
+ * その位置（`this.x`）だけをしきい値判定に使う。トラック自身（＝今
+ * 表示されているカード）はドラッグ中も指に追従して動かない——動くのは
+ * リリース後、選択indexが変わったことで各カードがリング上の新しい
+ * 位置へ遷移する、見慣れたカルーセル遷移だけ。
  *
  * 実際のドラッグ（数px以上）の直後だけ短い間trueを返すrefを返す。これに
  * より、カードのクリックハンドラがドラッグのリリースと本物のタップを
@@ -36,16 +37,24 @@ export function useGalleryDrag(
     const el = trackRef.current
     if (!el || options.disabled) return
 
+    const proxy = document.createElement('div')
+    proxy.style.position = 'fixed'
+    proxy.style.top = '0'
+    proxy.style.left = '0'
+    proxy.style.visibility = 'hidden'
+    proxy.style.pointerEvents = 'none'
+    document.body.appendChild(proxy)
+
     let maxDistance = 0
     let clearTimer: number | undefined
 
-    const [draggable] = Draggable.create(el, {
+    const [draggable] = Draggable.create(proxy, {
       type: 'x',
+      trigger: el,
       dragClickables: true,
       allowContextMenu: true,
       onPress() {
         window.clearTimeout(clearTimer)
-        gsap.killTweensOf(el)
         maxDistance = 0
         el.classList.add(styles.isDragging)
       },
@@ -69,11 +78,7 @@ export function useGalleryDrag(
           }, 300)
         }
 
-        if (optionsRef.current.reducedMotion) {
-          gsap.set(el, { x: 0 })
-        } else {
-          gsap.to(el, { x: 0, duration: 0.5, ease: 'power3.out', overwrite: 'auto' })
-        }
+        gsap.set(proxy, { x: 0 })
         optionsRef.current.onCommit(direction)
       },
     })
@@ -81,6 +86,7 @@ export function useGalleryDrag(
     return () => {
       window.clearTimeout(clearTimer)
       draggable.kill()
+      proxy.remove()
     }
   }, [trackRef, options.disabled, options.thresholdPx])
 

@@ -11,9 +11,10 @@ export interface SlideStep {
 
 /**
  * PC用の奥行き: index 0が選択中のカード、1/2が見えている隣接カード、
- * 3はループの反対側（6枚目のカード）で、opacity 0で中心の裏に待機させ
- * 7枚目の見える枠としては認識されないようにしている——強すぎない、
- * 感じ取れる程度の3D感。
+ * 3以降（`resolveSlideTransform`が`steps.length - 1`にクランプする）は
+ * ループの反対側に位置する残り全てのカードで、opacity 0で中心の裏に
+ * 一括で待機させ、見える枠としては認識されないようにしている——強すぎ
+ * ない、感じ取れる程度の3D感。
  */
 export const PC_STEPS: readonly SlideStep[] = [
   { x: 0, z: 0, rotateY: 0, scale: 1, opacity: 1, reachable: true },
