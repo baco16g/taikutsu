@@ -136,7 +136,7 @@ export function GalleryCarousel({
                         if (justDraggedRef.current || introPlaying) e.preventDefault()
                       }}
                     >
-                      <GalleryCard game={game} priority />
+                      <GalleryCard game={game} priority load />
                       <span className="sr-only">（販売ページを別タブで開きます）</span>
                     </a>
                   ) : (
@@ -146,7 +146,7 @@ export function GalleryCarousel({
                       tabIndex={t.reachable ? 0 : -1}
                       onClick={() => handleCardActivate(i)}
                     >
-                      <GalleryCard game={game} priority={false} />
+                      <GalleryCard game={game} priority={false} load={t.reachable} />
                     </button>
                   )}
                 </div>
@@ -196,12 +196,27 @@ export function GalleryCarousel({
   )
 }
 
-function GalleryCard({ game, priority }: { game: GalleryGame; priority: boolean }) {
+function GalleryCard({
+  game,
+  priority,
+  load,
+}: {
+  game: GalleryGame
+  priority: boolean
+  load: boolean
+}) {
   return (
     <>
       <img
         className={styles.img}
-        src={game.thumbnailSrc}
+        // 登場演出はカード全員を一瞬center(x:0)に集めてからリングへ展開する
+        // ため、その間はloading="lazy"のビューポート近接判定が全カードを
+        // 「画面内」と誤判定してしまい、本来読み込むべきでない奥の
+        // カードまで一斉にフェッチされてしまう（GalleryGallery側で実測
+        // 済み）。ブラウザの判定に頼らず、reachable（＝実際に見える/
+        // 隣接するカード）になった時だけsrcそのものを与えることで、
+        // 読み込み自体を確実に遅延させる。
+        src={load ? game.thumbnailSrc : undefined}
         alt={game.thumbnailAlt}
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : 'low'}
