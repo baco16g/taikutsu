@@ -7,7 +7,14 @@ import {
   cloneBlobPoints,
   lerpBlobPoints,
 } from '../lib/shapeMath'
-import { CENTER, HIT_INDEX_BY_HP, HP_SHAPES, VIEW_SIZE, type Hp } from '../lib/shapeStates'
+import {
+  CENTER,
+  HIT_INDEX_BY_HP,
+  HP_AFTER_HIT,
+  HP_SHAPES,
+  VIEW_SIZE,
+  type Hp,
+} from '../lib/shapeStates'
 import { COLLAPSE_HOLES } from '../lib/collapseHoles'
 
 export interface ImpactInfo {
@@ -255,147 +262,148 @@ export function useCreatureAnimation({
     [reducedMotion],
   )
 
-  const attack = useCallback(
-    (targetHp: Hp) => {
-      if (isAttackingRef.current || hpRef.current === 0) return false
-      isAttackingRef.current = true
+  const attack = useCallback(() => {
+    if (hpRef.current === 0) return false
+    // 前の被弾の変形がまだ再生中なら、最後まで進めてから次の被弾を始める。
+    // 被弾を捨てると、着弾数とタ・イクツの形がずれたまま撃破に届かなくなる。
+    if (isAttackingRef.current) timelineRef.current?.progress(1)
+    const targetHp = HP_AFTER_HIT[hpRef.current]
+    isAttackingRef.current = true
 
-      // モーフは、wobbleのない基準形状ではなく「今まさに画面に出ている」
-      // もの（基準形状＋その時生きていたwobble/fade）から始める——
-      // そうしないと攻撃開始の瞬間に輪郭がbaselineへ目に見えて飛んでしまう。
-      const attackStartTime = gsap.ticker.time
-      const liveFade =
-        !reducedMotion && idleEnabled
-          ? clamp01((attackStartTime - wobbleResumeTimeRef.current) / WOBBLE_FADE_IN_DURATION)
-          : 0
-      const liveHoverMul = 1 + hoverIntensityRef.current * HOVER_WOBBLE_BOOST
-      const liveDeltas =
-        liveFade > 0 ? computeWobbleDeltas(restShapeRef.current, attackStartTime) : null
-      const fromShape = restShapeRef.current.map((p, i) => ({
-        angle: p.angle,
-        radius: p.radius + (liveDeltas ? liveDeltas[i] * liveFade * liveHoverMul : 0),
-      }))
-      const toShape = HP_SHAPES[targetHp]
-      const isFinalBlow = targetHp === 0
-      const hitIndex = HIT_INDEX_BY_HP[targetHp] ?? 0
-      const hitPoint = blobPointToVec2(fromShape[hitIndex], CENTER, CENTER)
+    // モーフは、wobbleのない基準形状ではなく「今まさに画面に出ている」
+    // もの（基準形状＋その時生きていたwobble/fade）から始める——
+    // そうしないと攻撃開始の瞬間に輪郭がbaselineへ目に見えて飛んでしまう。
+    const attackStartTime = gsap.ticker.time
+    const liveFade =
+      !reducedMotion && idleEnabled
+        ? clamp01((attackStartTime - wobbleResumeTimeRef.current) / WOBBLE_FADE_IN_DURATION)
+        : 0
+    const liveHoverMul = 1 + hoverIntensityRef.current * HOVER_WOBBLE_BOOST
+    const liveDeltas =
+      liveFade > 0 ? computeWobbleDeltas(restShapeRef.current, attackStartTime) : null
+    const fromShape = restShapeRef.current.map((p, i) => ({
+      angle: p.angle,
+      radius: p.radius + (liveDeltas ? liveDeltas[i] * liveFade * liveHoverMul : 0),
+    }))
+    const toShape = HP_SHAPES[targetHp]
+    const isFinalBlow = targetHp === 0
+    const hitIndex = HIT_INDEX_BY_HP[targetHp] ?? 0
+    const hitPoint = blobPointToVec2(fromShape[hitIndex], CENTER, CENTER)
 
-      const proxy = { t: 0 }
-      const speed = reducedMotion ? 2.4 : 1
-      const tl = gsap.timeline({
-        onComplete: () => {
-          hpRef.current = targetHp
-          restShapeRef.current = cloneBlobPoints(toShape)
-          isAttackingRef.current = false
-          wobbleResumeTimeRef.current = gsap.ticker.time
-          timelineRef.current = null
-          onRestingShapeChange?.(targetHp)
+    const proxy = { t: 0 }
+    const speed = reducedMotion ? 2.4 : 1
+    const tl = gsap.timeline({
+      onComplete: () => {
+        hpRef.current = targetHp
+        restShapeRef.current = cloneBlobPoints(toShape)
+        isAttackingRef.current = false
+        wobbleResumeTimeRef.current = gsap.ticker.time
+        timelineRef.current = null
+        onRestingShapeChange?.(targetHp)
+      },
+    })
+    timelineRef.current = tl
+
+    const morphDuration = (isFinalBlow ? 0.42 : 0.5) / speed
+    const morphEase = reducedMotion ? 'power1.out' : 'back.out(1.6)'
+
+    tl.call(
+      () => {
+        onImpact({
+          xFrac: hitPoint.x / VIEW_SIZE,
+          yFrac: hitPoint.y / VIEW_SIZE,
+          big: isFinalBlow,
+        })
+      },
+      undefined,
+      reducedMotion ? 0 : 0.03,
+    )
+
+    // 最後の一撃だけはclip pathをHP0の崩壊形状へモーフさせない——
+    // シルエットが縮むと「遠ざかっていく」ように見えてしまう。
+    // 代わりに本体のサイズはそのままに、下のマスク穴の侵食で
+    // 削られていくことで、その場で崩れ落ちるように見せている。
+    if (!isFinalBlow) {
+      tl.to(
+        proxy,
+        {
+          t: 1,
+          duration: morphDuration,
+          ease: morphEase,
+          onUpdate: () => {
+            applyPathD(
+              clipPathRef.current,
+              blobPointsToPath(lerpBlobPoints(fromShape, toShape, proxy.t), CENTER, CENTER),
+            )
+          },
         },
-      })
-      timelineRef.current = tl
-
-      const morphDuration = (isFinalBlow ? 0.42 : 0.5) / speed
-      const morphEase = reducedMotion ? 'power1.out' : 'back.out(1.6)'
-
-      tl.call(
-        () => {
-          onImpact({
-            xFrac: hitPoint.x / VIEW_SIZE,
-            yFrac: hitPoint.y / VIEW_SIZE,
-            big: isFinalBlow,
-          })
-        },
-        undefined,
         reducedMotion ? 0 : 0.03,
       )
+    }
 
-      // 最後の一撃だけはclip pathをHP0の崩壊形状へモーフさせない——
-      // シルエットが縮むと「遠ざかっていく」ように見えてしまう。
-      // 代わりに本体のサイズはそのままに、下のマスク穴の侵食で
-      // 削られていくことで、その場で崩れ落ちるように見せている。
+    if (!reducedMotion) {
       if (!isFinalBlow) {
         tl.to(
-          proxy,
-          {
-            t: 1,
-            duration: morphDuration,
-            ease: morphEase,
-            onUpdate: () => {
-              applyPathD(
-                clipPathRef.current,
-                blobPointsToPath(lerpBlobPoints(fromShape, toShape, proxy.t), CENTER, CENTER),
-              )
-            },
-          },
-          reducedMotion ? 0 : 0.03,
+          squashGroupRef.current,
+          { scaleX: 1.07, scaleY: 0.86, duration: 0.09, ease: 'power2.out' },
+          0,
         )
-      }
-
-      if (!reducedMotion) {
-        if (!isFinalBlow) {
-          tl.to(
-            squashGroupRef.current,
-            { scaleX: 1.07, scaleY: 0.86, duration: 0.09, ease: 'power2.out' },
-            0,
-          )
-          tl.to(
-            squashGroupRef.current,
-            { scaleX: 1, scaleY: 1, duration: 0.5, ease: 'elastic.out(1,0.55)' },
-            0.09,
-          )
-        } else {
-          // 着弾のsquash、短い静止（0.12〜0.24の間、何も予定されていない）、
-          // その後に本体が崩れながらリリース: マスクの穴がシルエット全体に
-          // 散らばって連鎖的に開き、複数の地点からパーティクルが同期して
-          // 噴き出すことで、本体そのものが瓦礫に変わっていくように見える
-          // （単に縮むだけではなく）。
-          tl.to(
-            squashGroupRef.current,
-            { scaleX: 1.1, scaleY: 0.8, duration: 0.12, ease: 'power2.out' },
-            0,
-          )
-          tl.to(
-            squashGroupRef.current,
-            { scaleX: 1, scaleY: 1, duration: 0.16, ease: 'power2.out' },
-            0.24,
-          )
-
-          if (collapseGroupRef.current) {
-            tl.to(
-              Array.from(collapseGroupRef.current.children),
-              {
-                attr: { r: (i: number) => COLLAPSE_HOLES[i]?.targetR ?? 20 },
-                duration: 0.45,
-                ease: 'power2.out',
-                stagger: { each: 0.006, from: 'random' },
-              },
-              0.26,
-            )
-          }
-
-          ;[0, 10, 20].forEach((holeIndex, i) => {
-            const hole = COLLAPSE_HOLES[holeIndex]
-            tl.call(
-              () => onImpact({ xFrac: hole.cx / VIEW_SIZE, yFrac: hole.cy / VIEW_SIZE, big: true }),
-              undefined,
-              0.26 + i * 0.12,
-            )
-          })
-
-          tl.to(visibilityGroupRef.current, { opacity: 0, duration: 0.4, ease: 'power1.in' }, 0.56)
-        }
-      } else if (isFinalBlow) {
         tl.to(
-          visibilityGroupRef.current,
-          { opacity: 0, duration: 0.25, ease: 'power1.in' },
-          morphDuration * 0.6,
+          squashGroupRef.current,
+          { scaleX: 1, scaleY: 1, duration: 0.5, ease: 'elastic.out(1,0.55)' },
+          0.09,
         )
-      }
+      } else {
+        // 着弾のsquash、短い静止（0.12〜0.24の間、何も予定されていない）、
+        // その後に本体が崩れながらリリース: マスクの穴がシルエット全体に
+        // 散らばって連鎖的に開き、複数の地点からパーティクルが同期して
+        // 噴き出すことで、本体そのものが瓦礫に変わっていくように見える
+        // （単に縮むだけではなく）。
+        tl.to(
+          squashGroupRef.current,
+          { scaleX: 1.1, scaleY: 0.8, duration: 0.12, ease: 'power2.out' },
+          0,
+        )
+        tl.to(
+          squashGroupRef.current,
+          { scaleX: 1, scaleY: 1, duration: 0.16, ease: 'power2.out' },
+          0.24,
+        )
 
-      return true
-    },
-    [onImpact, onRestingShapeChange, reducedMotion, idleEnabled],
-  )
+        if (collapseGroupRef.current) {
+          tl.to(
+            Array.from(collapseGroupRef.current.children),
+            {
+              attr: { r: (i: number) => COLLAPSE_HOLES[i]?.targetR ?? 20 },
+              duration: 0.45,
+              ease: 'power2.out',
+              stagger: { each: 0.006, from: 'random' },
+            },
+            0.26,
+          )
+        }
+
+        ;[0, 10, 20].forEach((holeIndex, i) => {
+          const hole = COLLAPSE_HOLES[holeIndex]
+          tl.call(
+            () => onImpact({ xFrac: hole.cx / VIEW_SIZE, yFrac: hole.cy / VIEW_SIZE, big: true }),
+            undefined,
+            0.26 + i * 0.12,
+          )
+        })
+
+        tl.to(visibilityGroupRef.current, { opacity: 0, duration: 0.4, ease: 'power1.in' }, 0.56)
+      }
+    } else if (isFinalBlow) {
+      tl.to(
+        visibilityGroupRef.current,
+        { opacity: 0, duration: 0.25, ease: 'power1.in' },
+        morphDuration * 0.6,
+      )
+    }
+
+    return true
+  }, [onImpact, onRestingShapeChange, reducedMotion, idleEnabled])
 
   return {
     clipPathRef,

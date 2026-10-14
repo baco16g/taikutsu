@@ -52,6 +52,9 @@ export const HP_SHAPES: Record<Hp, BlobPoint[]> = {
   0: shapeFrom(HP0_RADII),
 }
 
+/** 1回被弾した後のHP。HP0のまま被弾しても0のまま。 */
+export const HP_AFTER_HIT: Record<Hp, Hp> = { 5: 4, 4: 3, 3: 2, 2: 1, 1: 0, 0: 0 }
+
 /** `hp + 1`から`hp`へ移る際に最も深くなった凹みのインデックス——ヒットパーティクルの着弾位置を狙うために使う。 */
 export const HIT_INDEX_BY_HP: Partial<Record<Hp, number>> = {
   4: 3,

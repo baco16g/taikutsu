@@ -1,4 +1,4 @@
-import { useId, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { useId, useImperativeHandle, useMemo, useRef } from 'react'
 import { blobPointsToPath } from '../lib/shapeMath'
 import { CENTER, VIEW_SIZE, type Hp } from '../lib/shapeStates'
 import { COLLAPSE_HOLES } from '../lib/collapseHoles'
@@ -8,7 +8,7 @@ import { HitParticles, type HitParticlesHandle } from './HitParticles'
 import styles from './TaikutsuCreature.module.css'
 
 export interface TaikutsuCreatureHandle {
-  /** 1段階分の被弾アニメーションを再生する。前の被弾がまだ再生中、または撃破済みなら何もせずfalse。 */
+  /** HPを1減らし、被弾アニメーションを再生する。前の被弾がまだ再生中なら、それを最後まで進めてから始める。撃破済みなら何もせずfalse。 */
   attack: () => boolean
   /** HP満タンの静止状態へ即座に戻す。 */
   reset: () => void
@@ -31,38 +31,29 @@ export function TaikutsuCreature({
   ref,
 }: TaikutsuCreatureProps) {
   const idPrefix = useId().replace(/[:]/g, '')
-  const [hp, setHp] = useState<Hp>(5)
   const particlesRef = useRef<HitParticlesHandle>(null)
 
   const handleImpact = (impact: ImpactInfo) => {
     particlesRef.current?.burst(impact.xFrac, impact.yFrac, impact.big)
   }
 
-  const handleRestingShapeChange = (nextHp: Hp) => {
-    setHp(nextHp)
-    onHpChange?.(nextHp)
-  }
-
   const anim = useCreatureAnimation({
     idleEnabled,
     reducedMotion,
     onImpact: handleImpact,
-    onRestingShapeChange: handleRestingShapeChange,
+    onRestingShapeChange: onHpChange,
   })
 
   useImperativeHandle(
     ref,
     () => ({
-      attack: () => {
-        if (hp === 0) return false
-        return anim.attack((hp - 1) as Hp)
-      },
+      attack: () => anim.attack(),
       reset: () => {
         particlesRef.current?.clear()
         anim.setHpImmediate(5)
       },
     }),
-    [anim, hp],
+    [anim],
   )
 
   const initialPathD = useMemo(

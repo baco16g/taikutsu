@@ -55,4 +55,19 @@ describe('HomePage session flow (reduced motion)', () => {
     expect(screen.queryByRole('heading', { name: /次に遊ぶゲーム/ })).toBeNull()
     expect(screen.getByRole('button', { name: /たたかう/ }).hasAttribute('disabled')).toBe(false)
   }, 15000)
+
+  it('still defeats the creature when the five hits land faster than its hit animation', async () => {
+    installBrowserStubs({ hover: true, reducedMotion: true })
+    render(<HomePage />)
+    fireEvent.click(screen.getByRole('button', { name: /たたかう/ }))
+
+    // タ・イクツの被弾の変形が終わるのを待たずに、5回続けて着弾させる。
+    const menu = screen.getByRole('list', { name: 'スキルコマンド' })
+    for (let hit = 1; hit <= 5; hit += 1) {
+      fireEvent.click(within(menu).getAllByRole('button')[0])
+    }
+
+    expect(screen.getByRole('img', { name: /^HP / }).getAttribute('aria-label')).toBe('HP 0 / 5')
+    await waitFor(() => expect(liveRegion().textContent).toBe(DEFEATED))
+  }, 15000)
 })
