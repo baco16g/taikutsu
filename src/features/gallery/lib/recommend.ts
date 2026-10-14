@@ -1,7 +1,7 @@
 import { GAME_INTROS, type GameIntro } from '../../../catalog/gameIntros'
 import { SPECIAL_MOVES_BY_ID } from '../../../catalog/specialMoves'
 import { mulberry32 } from '../../../lib/prng'
-import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
+import type { GalleryConnection, GalleryGame } from '../types'
 
 /**
  * 実体のある推薦エンジン: プレイヤーが実際に選んだ技idから、
@@ -53,15 +53,6 @@ export const TOTAL_GAME_COUNT = 10
 
 /** `TOTAL_GAME_COUNT`のうちstrong-tie枠の上限。1セッションで選ぶ技の数（5）と一致させ、選んだ技それぞれに必ず1件ずつ割り当たるようにしている。残りはdiscovery枠（モジュール先頭のdocコメント参照）。 */
 const STRONG_TIE_TARGET = 5
-
-/** 実セッションが存在しない場合に使う、デモ/デフォルト用の選択技セット（recommendGamesの`chosenMoveIds`パラメータ解説を参照）。 */
-const DEFAULT_CHOSEN_MOVE_IDS = ['C01', 'C13', 'C17', 'C21', 'C27']
-
-export const DEFAULT_CHOSEN_MOVES: GalleryMove[] = DEFAULT_CHOSEN_MOVE_IDS.map((id) => {
-  const move = SPECIAL_MOVES_BY_ID.get(id)
-  if (!move) throw new Error(`Unknown move id in DEFAULT_CHOSEN_MOVE_IDS: ${id}`)
-  return { id: move.id, name: move.name }
-})
 
 function buildConnections(
   game: GameIntro,
@@ -171,12 +162,8 @@ function pickStrongTieGameIds(
 /**
  * このプレイヤーのセッションに対して表示する`TOTAL_GAME_COUNT`件のゲームを計算する。
  *
- * @param chosenMoveIds プレイヤーがこのセッション（battle→gallery）で
- *   実際に選んだ技id。順序・件数は問わない——0件（実セッションなしの場合:
- *   全件discoveryのギャラリーにフォールバック）や、現状の「1セッション5件」
- *   というルールが将来変わった場合の別件数にも対応する。実セッションが
- *   ない場合のデモ用には`DEFAULT_CHOSEN_MOVE_IDS`由来のid
- *   （`DEFAULT_CHOSEN_MOVES`参照）を渡す。
+ * @param chosenMoveIds プレイヤーがこのセッションで実際に選んだ技id。
+ *   順序・重複は結果に影響しない。0件なら全件discovery枠になる。
  */
 export function recommendGames(chosenMoveIds: readonly string[]): GalleryGame[] {
   const uniqueMoveIds = Array.from(new Set(chosenMoveIds)).sort()

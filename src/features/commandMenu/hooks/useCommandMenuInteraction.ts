@@ -9,15 +9,11 @@ import {
 } from 'react'
 import type { useCommandMenuAnimation } from './useCommandMenuAnimation'
 import type { useCommandSound } from './useCommandSound'
-import type { CommandMenuEvents, CommandMoveEvent, MoveEntry } from '../types'
+import type { LandedMove, MoveEntry } from '../types'
 
 type CommandMenuStatus = 'active' | 'complete'
 type Anim = ReturnType<typeof useCommandMenuAnimation>
 type Sound = ReturnType<typeof useCommandSound>
-
-function toEvent(move: MoveEntry, slotIndex: number, attackNumber: number): CommandMoveEvent {
-  return { moveId: move.id, moveName: move.name, slotIndex, attackNumber }
-}
 
 export interface UseCommandMenuInteractionOptions {
   status: CommandMenuStatus
@@ -27,7 +23,7 @@ export interface UseCommandMenuInteractionOptions {
   supportsHover: boolean
   anim: Anim
   sound: Sound
-  events: CommandMenuEvents | undefined
+  onImpact: (move: LandedMove) => void
   /** 攻撃の着弾先となる要素（タ・イクツ本体のラッパー）。 */
   targetRef: RefObject<HTMLElement | null>
   commitAttack: (moveId: string) => void
@@ -54,7 +50,7 @@ export function useCommandMenuInteraction({
   supportsHover,
   anim,
   sound,
-  events,
+  onImpact,
   targetRef,
   commitAttack,
   bandRef,
@@ -67,7 +63,6 @@ export function useCommandMenuInteraction({
   const [cursorIndex, setCursorIndex] = useState(0)
   const [isAttacking, setIsAttacking] = useState(false)
   const isAttackingRef = useRef(false)
-  const attackContextRef = useRef<CommandMoveEvent | null>(null)
   const lastPointerMoveAtRef = useRef(0)
   const cursorIndexRef = useRef(cursorIndex)
   cursorIndexRef.current = cursorIndex
@@ -86,9 +81,8 @@ export function useCommandMenuInteraction({
   // 表示中の6つが変わるたび（マウント・reroll・攻撃後の次ラウンド）、
   // カーソルは先頭に戻り新しい一覧がグループとしてrevealする。
   // statusも依存配列に含めているのは、5回目の攻撃ではcurrentMovesを
-  // 入れ替えずに（次の6つが存在しないため）statusだけが'complete'へ
-  // 切り替わるので、保留中のonAttackComplete/onSessionCompleteを
-  // 発火できるのはこのeffectしかないため。
+  // 入れ替えずにstatusだけが'complete'へ切り替わり、そのときも攻撃中の
+  // ロックを解除する必要があるため。
   useLayoutEffect(() => {
     if (status === 'active') {
       // どのみち必要なDOM計測と一緒にカーソルを新しい6つ/statusに合わせて
@@ -118,12 +112,6 @@ export function useCommandMenuInteraction({
       }
     }
 
-    if (attackContextRef.current) {
-      const ctx = attackContextRef.current
-      attackContextRef.current = null
-      events?.onAttackComplete?.(ctx)
-      if (status === 'complete') events?.onSessionComplete?.()
-    }
     isAttackingRef.current = false
     setIsAttacking(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -193,7 +181,6 @@ export function useCommandMenuInteraction({
       // タップした」であって「過去に一度でもarmされたことがある」では
       // ないため。
       if (armedIndexRef.current !== i) armedIndexRef.current = null
-      const move = currentMoves[i]
       setCursorIndex(i)
       anim.moveCursorBand(
         bandRef.current,
@@ -203,31 +190,16 @@ export function useCommandMenuInteraction({
         'glide',
       )
       sound.playMove()
-      // iがcurrentMovesの範囲外になるケースのガード（TSの配列型は
-      // インデックスの範囲を静的に保証しないため）。
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      events?.onPreviewMove?.(move ? toEvent(move, i, attackCount + 1) : null)
     },
-    [
-      status,
-      cursorIndex,
-      currentMoves,
-      anim,
-      reducedMotion,
-      sound,
-      events,
-      attackCount,
-      bandRef,
-      itemElsRef,
-      listWrapRef,
-    ],
+    [status, cursorIndex, anim, reducedMotion, sound, bandRef, itemElsRef, listWrapRef],
   )
 
   const confirmAttack = useCallback(
     (i: number) => {
       if (status !== 'active' || isAttackingRef.current) return
       const move = currentMoves[i]
-      // iがcurrentMovesの範囲外になるケースのガード（previewIndex参照）。
+      // iがcurrentMovesの範囲外になるケースのガード（TSの配列型は
+      // インデックスの範囲を静的に保証しないため）。
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!move) return
 
@@ -235,9 +207,8 @@ export function useCommandMenuInteraction({
       setIsAttacking(true)
       setCursorIndex(i)
 
-      const payload = toEvent(move, i, attackCount + 1)
+      const attackNumber = attackCount + 1
       sound.playAttack(move.id)
-      events?.onAttackStart?.(payload)
       // band自体のタップ確定フィードバック — この下で飛ばす演出の
       // 予備動作ではなく、無関係な独立した演出。
       anim.squeezeBand(bandRef.current, reducedMotion)
@@ -246,7 +217,6 @@ export function useCommandMenuInteraction({
       const fromEl = iconElsRef.current[i]
       const fxLayer = fxLayerRef.current
       if (!fromEl || !fxLayer) {
-        attackContextRef.current = payload
         commitAttack(move.id)
         return
       }
@@ -258,13 +228,10 @@ export function useCommandMenuInteraction({
           fxLayer,
           reducedMotion,
           onImpact: () => {
-            sound.playHit(payload.attackNumber)
-            events?.onImpact?.(payload)
+            sound.playHit(attackNumber)
+            onImpact({ id: move.id, name: move.name })
           },
-          onLanded: () => {
-            attackContextRef.current = payload
-            commitAttack(move.id)
-          },
+          onLanded: () => commitAttack(move.id),
         })
       }
 
@@ -285,7 +252,7 @@ export function useCommandMenuInteraction({
       currentMoves,
       attackCount,
       sound,
-      events,
+      onImpact,
       anim,
       reducedMotion,
       targetRef,

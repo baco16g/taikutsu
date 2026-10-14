@@ -9,13 +9,13 @@ import { CommandMenu } from './CommandMenu'
 // 「確定→着弾→次の6つ」までが1回のact()の中で進む。
 function renderMenu({ hover }: { hover: boolean }) {
   installBrowserStubs({ hover, reducedMotion: true })
-  const onImpact = vi.fn<(move: { moveId: string; moveName: string }) => void>()
+  const onImpact = vi.fn<(move: { id: string; name: string }) => void>()
   render(
     <CommandMenu
       targetRef={createRef<HTMLElement>()}
       soundEnabled={false}
       reducedMotion
-      events={{ onImpact }}
+      onImpact={onImpact}
     />,
   )
   return { onImpact }
@@ -46,7 +46,7 @@ describe('CommandMenu', () => {
     fireEvent.click(buttons[2])
 
     expect(onImpact).toHaveBeenCalledTimes(1)
-    expect(onImpact.mock.calls[0][0].moveName).toBe(chosenName)
+    expect(onImpact.mock.calls[0][0].name).toBe(chosenName)
     // 使った技は次の6つに二度と現れない。
     const nextNames = skillButtons().map(skillName)
     expect(nextNames).toHaveLength(VISIBLE_COUNT)

@@ -9,7 +9,6 @@ describe('useCommandMenuController', () => {
     expect(result.current.status).toBe('active')
     expect(result.current.currentMoves).toHaveLength(VISIBLE_COUNT)
     expect(result.current.attackCount).toBe(0)
-    expect(result.current.attackLimit).toBe(ATTACK_LIMIT)
   })
 
   it('reroll swaps the six without spending an attack', () => {
@@ -54,16 +53,5 @@ describe('useCommandMenuController', () => {
     expect(result.current.attackCount).toBe(ATTACK_LIMIT)
     // 次の6つを引く余地がない——最後の手札がそのまま画面に残る。
     expect(result.current.currentMoves).toBe(lastSix)
-  })
-
-  it('reset returns to a fresh active session', () => {
-    const { result } = renderHook(() => useCommandMenuController())
-    act(() => result.current.commitAttack(result.current.currentMoves[0].id))
-
-    act(() => result.current.reset())
-
-    expect(result.current.status).toBe('active')
-    expect(result.current.attackCount).toBe(0)
-    expect(result.current.currentMoves).toHaveLength(VISIBLE_COUNT)
   })
 })

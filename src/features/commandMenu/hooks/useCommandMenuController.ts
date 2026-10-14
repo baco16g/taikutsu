@@ -10,14 +10,6 @@ interface ControllerState {
   attackCount: number
 }
 
-function freshState(): ControllerState {
-  return {
-    status: 'active',
-    currentMoves: [],
-    attackCount: 0,
-  }
-}
-
 /**
  * 技プール/使用済み技の管理を担う: 27個中6個を常に画面に表示し、
  * 使用済みの技は二度と現れず、「ほかのスキルを見る」はまだ一度も表示して
@@ -31,17 +23,8 @@ export function useCommandMenuController() {
   const [state, setState] = useState<ControllerState>(() => {
     const first = drawMoves(poolRef.current, unseenIdsRef.current, VISIBLE_COUNT)
     first.forEach((m) => unseenIdsRef.current.delete(m.id))
-    return { ...freshState(), currentMoves: first }
+    return { status: 'active', currentMoves: first, attackCount: 0 }
   })
-
-  const reset = useCallback(() => {
-    poolRef.current = createShuffledPool()
-    unseenIdsRef.current = new Set(ALL_MOVES.map((m) => m.id))
-    usedIdsRef.current = new Set()
-    const first = drawMoves(poolRef.current, unseenIdsRef.current, VISIBLE_COUNT)
-    first.forEach((m) => unseenIdsRef.current.delete(m.id))
-    setState({ ...freshState(), currentMoves: first })
-  }, [])
 
   /** 「ほかのスキルを見る」: 攻撃を消費せずに表示中の6つを入れ替える。 */
   const reroll = useCallback(() => {
@@ -74,9 +57,7 @@ export function useCommandMenuController() {
     status: state.status,
     currentMoves: state.currentMoves,
     attackCount: state.attackCount,
-    attackLimit: ATTACK_LIMIT,
     reroll,
     commitAttack,
-    reset,
   }
 }

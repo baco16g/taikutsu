@@ -6,7 +6,7 @@ import { useCommandMenuAnimation } from '../hooks/useCommandMenuAnimation'
 import { useCommandMenuInteraction } from '../hooks/useCommandMenuInteraction'
 import { useCommandSound } from '../hooks/useCommandSound'
 import { useSupportsHover } from '../../../hooks/useSupportsHover'
-import type { CommandMenuEvents } from '../types'
+import type { LandedMove } from '../types'
 import styles from './CommandMenu.module.css'
 
 export interface CommandMenuProps {
@@ -14,10 +14,16 @@ export interface CommandMenuProps {
   targetRef: RefObject<HTMLElement | null>
   soundEnabled: boolean
   reducedMotion: boolean
-  events?: CommandMenuEvents
+  /** 攻撃のアイコンがタ・イクツに届いた瞬間に、使ったスキルとともに呼ばれる。 */
+  onImpact: (move: LandedMove) => void
 }
 
-export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: CommandMenuProps) {
+export function CommandMenu({
+  targetRef,
+  soundEnabled,
+  reducedMotion,
+  onImpact,
+}: CommandMenuProps) {
   const { status, currentMoves, attackCount, reroll, commitAttack } = useCommandMenuController()
   const sound = useCommandSound(soundEnabled)
   const supportsHover = useSupportsHover()
@@ -58,7 +64,7 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
     supportsHover,
     anim,
     sound,
-    events,
+    onImpact,
     targetRef,
     commitAttack,
     bandRef,

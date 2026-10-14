@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import clsx from 'clsx'
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react'
-import { useMediaQuery } from '../../../hooks/useMediaQuery'
+import { useMatchMedia } from '../../../hooks/useMatchMedia'
 import { useGalleryCarouselAnimation } from '../hooks/useGalleryCarouselAnimation'
 import { useGalleryDrag } from '../hooks/useGalleryDrag'
 import { PC_STEPS, SP_STEPS, circularDelta, resolveSlideTransform } from '../lib/carouselLayout'
@@ -24,7 +24,7 @@ export function GalleryCarousel({
   reducedMotion,
 }: GalleryCarouselProps) {
   const count = games.length
-  const isMobile = useMediaQuery('(max-width: 720px)')
+  const isMobile = useMatchMedia('(max-width: 720px)')
 
   const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)

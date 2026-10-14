@@ -8,11 +8,10 @@ import { HitParticles, type HitParticlesHandle } from './HitParticles'
 import styles from './TaikutsuCreature.module.css'
 
 export interface TaikutsuCreatureHandle {
+  /** 1段階分の被弾アニメーションを再生する。前の被弾がまだ再生中、または撃破済みなら何もせずfalse。 */
   attack: () => boolean
+  /** HP満タンの静止状態へ即座に戻す。 */
   reset: () => void
-  setHp: (hp: Hp) => void
-  getHp: () => Hp
-  isAttacking: () => boolean
 }
 
 export interface TaikutsuCreatureProps {
@@ -62,12 +61,6 @@ export function TaikutsuCreature({
         particlesRef.current?.clear()
         anim.setHpImmediate(5)
       },
-      setHp: (nextHp: Hp) => {
-        particlesRef.current?.clear()
-        anim.setHpImmediate(nextHp)
-      },
-      getHp: () => hp,
-      isAttacking: () => anim.isAttacking(),
     }),
     [anim, hp],
   )

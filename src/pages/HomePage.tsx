@@ -6,7 +6,7 @@ import { WorldFrame } from '../components/WorldFrame/WorldFrame'
 import { CommandMenu } from '../features/commandMenu/components/CommandMenu'
 import { ATTACK_LIMIT } from '../features/commandMenu/lib/moves'
 import { useCommandSound } from '../features/commandMenu/hooks/useCommandSound'
-import type { CommandMenuEvents } from '../features/commandMenu/types'
+import type { LandedMove } from '../features/commandMenu/types'
 import { IntroActor } from '../features/intro/components/IntroActor'
 import { useIntroPhase } from '../features/intro/hooks/useIntroPhase'
 import { INTRO_COPY } from '../features/intro/data/introCopy'
@@ -135,15 +135,10 @@ export function HomePage() {
     if (hp === 0) handleDefeatComplete()
   }
 
-  const events: CommandMenuEvents = {
-    onImpact: (event) => {
-      setHitSignal((n) => n + 1)
-      setImpactCount((n) => n + 1)
-      chosenMovesRef.current = [
-        ...chosenMovesRef.current,
-        { id: event.moveId, name: event.moveName },
-      ]
-    },
+  const handleImpact = (move: LandedMove) => {
+    setHitSignal((n) => n + 1)
+    setImpactCount((n) => n + 1)
+    chosenMovesRef.current = [...chosenMovesRef.current, move]
   }
 
   const showIntro = ['arrival', 'ready', 'depart'].includes(intro.phase)
@@ -267,7 +262,7 @@ export function HomePage() {
                     targetRef={intro.wrapperRef}
                     soundEnabled={soundEnabled}
                     reducedMotion={reducedMotion}
-                    events={events}
+                    onImpact={handleImpact}
                   />
                 </section>
 
@@ -278,7 +273,7 @@ export function HomePage() {
             {showGallery && (
               <GameGallery
                 reducedMotion={reducedMotion}
-                chosenMoves={chosenMovesRef.current.length > 0 ? chosenMovesRef.current : undefined}
+                chosenMoves={chosenMovesRef.current}
                 onReplay={handleReplay}
               />
             )}

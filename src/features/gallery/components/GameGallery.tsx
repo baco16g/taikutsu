@@ -1,23 +1,17 @@
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowClockwiseIcon } from '@phosphor-icons/react'
-import { useMediaQuery } from '../../../hooks/useMediaQuery'
+import { useMatchMedia } from '../../../hooks/useMatchMedia'
 import { GalleryCarousel } from './GalleryCarousel'
 import { GameInfoPanel } from './GameInfoPanel'
-import { DEFAULT_CHOSEN_MOVES, recommendGames } from '../lib/recommend'
+import { recommendGames } from '../lib/recommend'
 import type { GalleryMove } from '../types'
 import styles from './GameGallery.module.css'
 
 export interface GameGalleryProps {
   reducedMotion: boolean
-  /**
-   * このセッションでプレイヤーが実際に選んだ技（battle→galleryのreveal
-   * から渡される）。実体のある推薦エンジン（recommend.ts参照）に渡され、
-   * 表示するゲームを決める。省略した場合はDEFAULT_CHOSEN_MOVESに
-   * フォールバックする（引ける実セッションがない呼び出し元向け、
-   * 例えば手動テストなど）。
-   */
-  chosenMoves?: GalleryMove[]
+  /** このセッションでプレイヤーが実際に選んだ技。推薦（recommend.ts）の入力になる。 */
+  chosenMoves: GalleryMove[]
   /** 「もう一度たたかう」の選択を呼び出し元へ伝える。セッション全体のリセットは呼び出し元の責任。 */
   onReplay: () => void
 }
@@ -31,17 +25,13 @@ export interface GameGalleryProps {
 export function GameGallery({ reducedMotion, chosenMoves, onReplay }: GameGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [introSettled, setIntroSettled] = useState(false)
-  const isMobile = useMediaQuery('(max-width: 720px)')
+  const isMobile = useMatchMedia('(max-width: 720px)')
 
-  const effectiveChosenMoves = chosenMoves ?? DEFAULT_CHOSEN_MOVES
   // 選んだ技の入力自体が変わったときだけ再計算する。カルーセルの
   // ナビゲーションによる再レンダリングのたびには再計算しない——
   // recommendGamesは同じ入力に対して決定的なので、正しさのために
   // 再計算が必要なわけではなく、避けるのはあくまでパフォーマンス上の理由。
-  const games = useMemo(
-    () => recommendGames(effectiveChosenMoves.map((m) => m.id)),
-    [effectiveChosenMoves],
-  )
+  const games = useMemo(() => recommendGames(chosenMoves.map((m) => m.id)), [chosenMoves])
   const game = games[selectedIndex]
 
   return (
@@ -56,7 +46,7 @@ export function GameGallery({ reducedMotion, chosenMoves, onReplay }: GameGaller
           見つけにいこう！
         </h2>
         <p className={styles.sub}>
-          あなたが選んだ{effectiveChosenMoves.length}つのスキルから、
+          あなたが選んだ{chosenMoves.length}つのスキルから、
           {isMobile && <br />}
           {games.length}作品を推薦しました。
         </p>

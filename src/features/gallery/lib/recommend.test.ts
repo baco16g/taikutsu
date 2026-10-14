@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { GAME_INTROS } from '../../../catalog/gameIntros'
 import { SPECIAL_MOVES_BY_ID } from '../../../catalog/specialMoves'
-import { DEFAULT_CHOSEN_MOVES, TOTAL_GAME_COUNT, recommendGames } from './recommend'
+import { TOTAL_GAME_COUNT, recommendGames } from './recommend'
 
 /** `moveId`にstrongで結びついている実際のゲームid。data/gameIntros.jsonそのまま——エンジンをバンドル済みデータそのものに対して検証するためで、別に手で用意した2つ目のfixtureではない。 */
 function gamesStronglyTiedTo(moveId: string): Set<string> {
@@ -12,7 +12,8 @@ function gamesStronglyTiedTo(moveId: string): Set<string> {
   )
 }
 
-const DEFAULT_MOVE_IDS = DEFAULT_CHOSEN_MOVES.map((m) => m.id)
+/** 1セッション分（5つ）の選択スキルの例。 */
+const DEFAULT_MOVE_IDS = ['C01', 'C13', 'C17', 'C21', 'C27']
 
 describe('recommendGames', () => {
   it('always returns exactly TOTAL_GAME_COUNT games', () => {

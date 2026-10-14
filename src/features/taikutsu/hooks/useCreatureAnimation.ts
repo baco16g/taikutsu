@@ -404,6 +404,5 @@ export function useCreatureAnimation({
     attack,
     setHpImmediate,
     setHovered,
-    isAttacking: () => isAttackingRef.current,
   }
 }
