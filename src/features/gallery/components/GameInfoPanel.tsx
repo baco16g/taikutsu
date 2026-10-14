@@ -82,10 +82,14 @@ export function GameInfoPanel({ game, reducedMotion, introSettled }: GameInfoPan
         <ul className={styles.connections}>
           {displayedGame.connections.map((c) => (
             <li key={c.moveId} className={styles.connection}>
-              <p className={styles.connectionLabel}>あなたが選んだスキル</p>
-              <p className={styles.connectionMove}>「{c.moveName}」</p>
-              <p className={styles.connectionLabel}>このゲームで楽しめること</p>
-              <p className={styles.connectionExp}>「{c.experience}」</p>
+              <div className={styles.connectionGroup}>
+                <p className={styles.connectionLabel}>あなたが選んだスキル</p>
+                <p className={styles.connectionMove}>「{c.moveName}」</p>
+              </div>
+              <div className={styles.connectionGroup}>
+                <p className={styles.connectionLabel}>このゲームで楽しめること</p>
+                <p className={styles.connectionExp}>「{c.experience}」</p>
+              </div>
             </li>
           ))}
         </ul>
