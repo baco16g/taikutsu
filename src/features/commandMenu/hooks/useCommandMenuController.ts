@@ -16,12 +16,13 @@ interface ControllerState {
  * いない技を優先し、5回攻撃した時点でセッションが終わる。
  */
 export function useCommandMenuController() {
-  const poolRef = useRef<MoveEntry[]>(createShuffledPool())
+  // 山札はマウント時に一度だけシャッフルする（useRefの初期値に書くと毎レンダー評価される）。
+  const [pool] = useState(createShuffledPool)
   const unseenIdsRef = useRef<Set<string>>(new Set(ALL_MOVES.map((m) => m.id)))
   const usedIdsRef = useRef<Set<string>>(new Set())
 
   const [state, setState] = useState<ControllerState>(() => {
-    const first = drawMoves(poolRef.current, unseenIdsRef.current, VISIBLE_COUNT)
+    const first = drawMoves(pool, unseenIdsRef.current, VISIBLE_COUNT)
     first.forEach((m) => unseenIdsRef.current.delete(m.id))
     return { status: 'active', currentMoves: first, attackCount: 0 }
   })
@@ -31,12 +32,12 @@ export function useCommandMenuController() {
     setState((prev) => {
       if (prev.status !== 'active') return prev
       const exclude = new Set(prev.currentMoves.map((m) => m.id))
-      const available = poolRef.current.filter((m) => !usedIdsRef.current.has(m.id))
+      const available = pool.filter((m) => !usedIdsRef.current.has(m.id))
       const next = drawMoves(available, unseenIdsRef.current, VISIBLE_COUNT, exclude)
       next.forEach((m) => unseenIdsRef.current.delete(m.id))
       return { ...prev, currentMoves: next.length > 0 ? next : prev.currentMoves }
     })
-  }, [])
+  }, [pool])
 
   /** `moveId`を使用済みにし、次の6つを並べる（5回攻撃した場合はセッションを終える）。 */
   const commitAttack = useCallback((moveId: string) => {
@@ -46,12 +47,12 @@ export function useCommandMenuController() {
       if (attackCount >= ATTACK_LIMIT) {
         return { ...prev, status: 'complete', attackCount }
       }
-      const available = poolRef.current.filter((m) => !usedIdsRef.current.has(m.id))
+      const available = pool.filter((m) => !usedIdsRef.current.has(m.id))
       const next = drawMoves(available, unseenIdsRef.current, VISIBLE_COUNT)
       next.forEach((m) => unseenIdsRef.current.delete(m.id))
       return { ...prev, attackCount, currentMoves: next }
     })
-  }, [])
+  }, [pool])
 
   return {
     status: state.status,
