@@ -99,7 +99,7 @@ export function GameInfoPanel({ game, reducedMotion, introSettled }: GameInfoPan
       >
         ゲームの詳細を見る
         <ArrowSquareOutIcon size={16} weight="bold" aria-hidden="true" />
-        <span className="sr-only">（Nintendo Store を別タブで開きます）</span>
+        <span className="sr-only">（販売ページを別タブで開きます）</span>
       </a>
     </div>
   )

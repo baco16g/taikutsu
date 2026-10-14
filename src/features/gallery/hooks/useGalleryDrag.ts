@@ -22,8 +22,8 @@ export interface UseGalleryDragOptions {
  *
  * Returns a ref that reads true for a short window right after a real
  * drag (beyond a few px), so the card click handlers can tell a
- * drag-release apart from a genuine tap and skip opening the Nintendo
- * Store link by accident.
+ * drag-release apart from a genuine tap and skip opening the game's
+ * sales page link by accident.
  */
 export function useGalleryDrag(
   trackRef: RefObject<HTMLElement | null>,

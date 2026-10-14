@@ -139,7 +139,7 @@ export function GalleryCarousel({
                       }}
                     >
                       <GalleryCard game={game} priority />
-                      <span className="sr-only">（Nintendo Store を別タブで開きます）</span>
+                      <span className="sr-only">（販売ページを別タブで開きます）</span>
                     </a>
                   ) : (
                     <button
