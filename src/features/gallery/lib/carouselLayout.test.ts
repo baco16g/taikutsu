@@ -15,7 +15,7 @@ describe('circularDelta', () => {
   })
 
   it('wraps around the loop by the shortest path', () => {
-    // 6 items, selected=0: index 5 is 1 step behind (-1), not 5 steps ahead.
+    // 6個、selected=0の場合: index 5は5歩先ではなく1歩手前（-1）。
     expect(circularDelta(5, 0, 6)).toBe(-1)
   })
 })
@@ -24,7 +24,7 @@ describe('resolveSlideTransform', () => {
   it('returns the centered, fully visible step for delta 0', () => {
     const t = resolveSlideTransform(0, PC_STEPS)
     expect(t).toMatchObject({ x: 0, z: 0, scale: 1, opacity: 1, reachable: true })
-    expect(t.rotateY).toBeCloseTo(0) // -0 * sign(0) is -0, equivalent to 0 for CSS rotation
+    expect(t.rotateY).toBeCloseTo(0) // -0 * sign(0) は-0になるが、CSSのrotationでは0と等価
   })
 
   it('mirrors x/rotateY sign with the delta sign', () => {

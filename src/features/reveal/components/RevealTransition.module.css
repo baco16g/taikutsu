@@ -1,14 +1,14 @@
-/* The battle→gallery cover layer. Fixed to the viewport, not the scrolling
-   World Container, so its bottom edge always reaches the actual bottom of
-   what's currently visible regardless of document height — see
-   RevealTransition.tsx for how its own top offset is computed per-run
-   (anchor vs. full cover). */
+/* battle→galleryの覆い隠すレイヤー。スクロールするWorld Containerでは
+   なくビューポートに固定しており、ドキュメントの高さに関わらずその
+   下端が常に現在見えている範囲の実際の下端に届く——その上端オフセットが
+   実行ごとにどう計算されるか（アンカー方式か全面カバーか）は
+   RevealTransition.tsx参照。 */
 .sheets {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  /* top is set inline per-run (RevealTransition.tsx) */
+  /* topは実行ごとにインラインで設定される（RevealTransition.tsx） */
   z-index: 900;
   pointer-events: auto;
   overflow: hidden;
@@ -18,8 +18,8 @@
   position: absolute;
   inset: 0;
   will-change: clip-path, opacity;
-  /* Starts fully open (not covering) — RevealTransition.tsx drives every
-     visible state via GSAP from here. */
+  /* 完全に開いた（覆っていない）状態から始まる——以降の全ての表示状態は
+     ここからRevealTransition.tsxがGSAPで駆動する。 */
   clip-path: polygon(0 200%, 100% 100%, 100% 100%, 0 100%);
 }
 

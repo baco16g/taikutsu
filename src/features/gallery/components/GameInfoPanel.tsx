@@ -8,7 +8,7 @@ import styles from './GameInfoPanel.module.css'
 export interface GameInfoPanelProps {
   game: GalleryGame
   reducedMotion: boolean
-  /** True once the carousel's one-time entrance has settled — gates this panel's own first reveal so title/intro don't appear before the cards do. */
+  /** カルーセルの一度きりの登場演出が落ち着くとtrueになる——このパネル自身の初回revealをゲートし、タイトル/紹介文がカードより先に表示されないようにする。 */
   introSettled: boolean
 }
 

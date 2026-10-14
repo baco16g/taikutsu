@@ -24,12 +24,12 @@
   transform-style: preserve-3d;
   touch-action: pan-y;
   cursor: grab;
-  /* The track's own flat (z:0) plane sits in front of neighbor cards once
-     they're pushed back with a negative translateZ, so without this, the
-     browser hit-tests clicks to the empty track instead of the receded
-     card underneath it. Cards re-enable pointer-events themselves;
-     Draggable still gets its drag gesture because presses that land on a
-     card bubble up to the track's listener regardless of this. */
+  /* 隣接カードが負のtranslateZで奥へ押しやられると、トラック自身の
+     平らな（z:0）平面がそれらカードの手前に来てしまう。これがないと、
+     ブラウザはクリックを奥に引っ込んだカードではなく空のトラックへ
+     ヒットテストしてしまう。カード自身はpointer-eventsを再度有効化
+     しているので、カード上で発生したpressはこれに関わらずトラックの
+     リスナーへバブリングし、Draggableもドラッグジェスチャーを問題なく受け取れる。 */
   pointer-events: none;
 }
 
@@ -114,7 +114,7 @@
   display: flex;
 }
 
-/* ---------- controls ---------- */
+/* ---------- コントロール ---------- */
 
 .controls {
   display: flex;
@@ -190,7 +190,7 @@
   cursor: default;
 }
 
-/* ---------- responsive ---------- */
+/* ---------- レスポンシブ ---------- */
 
 @media (max-width: 720px) {
   .root {

@@ -17,7 +17,7 @@ import type { CommandMenuEvents, CommandMoveEvent, MoveEntry } from '../types'
 import styles from './CommandMenu.module.css'
 
 export interface CommandMenuProps {
-  /** Element the attack flies toward — the タ・イクツ placeholder (or later, the real creature). */
+  /** 攻撃の着弾先となる要素（タ・イクツ本体のラッパー）。 */
   targetRef: RefObject<HTMLElement | null>
   soundEnabled: boolean
   reducedMotion: boolean
@@ -35,18 +35,17 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
   const rootRef = useRef<HTMLDivElement>(null)
   const listWrapRef = useRef<HTMLDivElement>(null)
   const bandRef = useRef<HTMLDivElement>(null)
-  // A child of .band dedicated to the idle breathing pulse — see
-  // useCommandMenuAnimation's startIdlePulse/stopIdlePulse for why this
-  // has to be a separate element and not another tween on bandRef itself
-  // (glide/reveal/squeeze all animate bandRef's own transform via
-  // overwrite:'auto', which would silently kill the loop every time any
-  // of them ran).
+  // .band専用の、アイドル時の明滅（breathing pulse）を担う子要素。
+  // useCommandMenuAnimationのstartIdlePulse/stopIdlePulseが解説している通り、
+  // bandRef自体への追加tweenにはできない（glide/reveal/squeezeは
+  // overwrite:'auto'でbandRef自身のtransformを動かすため、このループと
+  // 衝突して毎回サイレントに止まってしまう）。
   const bandPulseRef = useRef<HTMLDivElement>(null)
   const fxLayerRef = useRef<HTMLDivElement>(null)
   const itemElsRef = useRef<(HTMLButtonElement | null)[]>([])
-  // What actually flies at confirm is the move's own icon, not the whole
-  // row — tracked separately from itemElsRef so playAttackFlight can
-  // clone just the icon's small SVG instead of the full row.
+  // confirm時に実際に飛ぶのは行全体ではなく技アイコン単体。
+  // playAttackFlightが行全体ではなくアイコンのSVGだけを複製できるよう、
+  // itemElsRefとは別に保持している。
   const iconElsRef = useRef<(SVGSVGElement | null)[]>([])
 
   const anim = useCommandMenuAnimation(rootRef)
@@ -60,28 +59,27 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
   const cursorIndexRef = useRef(cursorIndex)
   cursorIndexRef.current = cursorIndex
   const revealInFlightRef = useRef(false)
-  // Touch-only (no hover): a tap both focuses and clicks a button at once,
-  // so a single tap used to preview *and* immediately confirm — the band
-  // was only ever visible for the instant before squeezeBand overwrote it.
-  // Gating the attack on "was this row already armed" turns one tap into
-  // "select" and a second tap on that same row into "confirm", so the
-  // preview the band represents is an actual, visible step again instead
-  // of a formality. Kept separate from cursorIndex (which previewIndex
-  // still drives) so arming tracks "did the user deliberately activate
-  // this row twice," not just "which row is currently previewed."
+  // ホバー不可（タッチ）端末ではタップ一発でフォーカスとクリックが同時に発火するため、
+  // 本来プレビューのはずの1タップがそのまま即confirmになってしまい、
+  // bandがsqueezeBandに上書きされる一瞬しか見えていなかった。
+  // 「その行が既にarm済みか」をゲートにすることで、1タップ目を「選択」、
+  // 同じ行への2タップ目を「確定」に分離し、bandによるプレビューを
+  // 形だけでなく実際に見える1ステップとして成立させている。
+  // cursorIndex（previewIndexが動かす値）とは別管理にしているのは、
+  // armedが追うべきは「今プレビュー中の行」ではなく
+  // 「ユーザーが意図的にこの行を2回アクティベートしたか」だから。
   const armedIndexRef = useRef<number | null>(null)
 
-  // Whenever the visible six changes (mount, reroll, or the round after an
-  // attack lands) the cursor returns to the first command and the new list
-  // reveals as one group. `status` is also a dependency: the 5th attack
-  // flips status to 'complete' without swapping currentMoves (there's no
-  // next six to draw), so it's the only signal this effect gets to fire
-  // the pending onAttackComplete/onSessionComplete.
+  // 表示中の6つが変わるたび（マウント・reroll・攻撃後の次ラウンド）、
+  // カーソルは先頭に戻り新しい一覧がグループとしてrevealする。
+  // statusも依存配列に含めているのは、5回目の攻撃ではcurrentMovesを
+  // 入れ替えずに（次の6つが存在しないため）statusだけが'complete'へ
+  // 切り替わるので、保留中のonAttackComplete/onSessionCompleteを
+  // 発火できるのはこのeffectしかないため。
   useLayoutEffect(() => {
     if (status === 'active') {
-      // Resets the cursor in response to a new six/status, alongside the
-      // DOM measurement below it needs anyway — not splittable into a
-      // render-time computation.
+      // どのみち必要なDOM計測と一緒にカーソルを新しい6つ/statusに合わせて
+      // リセットしている。render時点の計算に分離できる処理ではない。
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCursorIndex(0)
       armedIndexRef.current = null
@@ -94,12 +92,11 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
         reducedMotion,
         'reveal',
       )
-      // Guards the resize-sync effect below from gsap.set()-ing over this
-      // reveal tween's bounce-in mid-flight if a ResizeObserver callback
-      // (e.g. the list wrapper's own height settling as the new six's
-      // rows lay out) lands inside its ~0.46s window. Skipped entirely
-      // under reducedMotion since that path is already an instant
-      // gsap.set with nothing to collide with.
+      // このreveal tween（約0.46秒のバウンスイン）の最中にResizeObserver
+      // コールバック（新しい6つの行がレイアウトされてlistWrapの高さが
+      // 落ち着く等）が走ってgsap.set()で上書きされないよう、下のリサイズ
+      // 同期effectをこの間だけガードする。reducedMotion下はそもそも衝突の
+      // 起きない即時gsap.setなのでスキップ。
       if (!reducedMotion) {
         revealInFlightRef.current = true
         window.setTimeout(() => {
@@ -119,23 +116,21 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMoves, status])
 
-  // The band's y/height are set from itemEl.offsetHeight at the moment
-  // previewIndex/the reveal above runs — correct for a reroll or a cursor
-  // move, since those happen after the DOM already reflects the new
-  // content. But nothing re-measures on a pure browser resize/orientation
-  // change: with descriptions wrapping instead of truncating, a row's
-  // height can change at a width where neither currentMoves nor status
-  // changes, leaving the band's last measured height stale against the
-  // row's actual new height. A ResizeObserver on the list wrapper
-  // re-syncs it (snapping, not re-gliding) whenever that happens,
-  // independent of the GSAP tweens themselves, which stay untouched.
+  // bandのy/heightはpreviewIndex（上のreveal含む）が走った瞬間の
+  // itemEl.offsetHeightから決まる。reroll・カーソル移動であれば、
+  // それらは常にDOMが新しい内容を反映した後に起きるので正しい。
+  // しかし純粋なブラウザのリサイズ・画面回転では再計測が走らない。
+  // 説明文が省略されず折り返す実装のため、currentMovesもstatusも変わらない
+  // 幅で行の高さだけが変わるケースがあり、bandの最終計測値が行の実際の
+  // 新しい高さとずれたままになる。listWrapにResizeObserverを張ることで、
+  // GSAPのtween自体には触れずにそのズレをスナップで再同期している。
   useEffect(() => {
     const listWrap = listWrapRef.current
     if (!listWrap || status !== 'active') return
-    // ResizeObserver fires once immediately on observe() with the current
-    // size — skip that first call, since the reveal tween above has
-    // already placed the band correctly; acting on it would gsap.set()
-    // over the reveal's in-flight animation and cancel its bounce-in.
+    // ResizeObserverはobserve()直後に現在サイズで1回必ず発火する。
+    // その最初の1回は無視する — 上のrevealが既にbandを正しい位置に
+    // 置いた直後であり、ここで反応するとgsap.set()でreveal tweenの
+    // バウンスインを上書き・中断させてしまう。
     let isFirstCallback = true
     const ro = new ResizeObserver(() => {
       if (isFirstCallback) {
@@ -155,9 +150,10 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
     return () => ro.disconnect()
   }, [status, anim])
 
-  // Starts once and runs for the component's lifetime (or until
-  // reducedMotion flips on) — not re-triggered per row/reveal/glide, since
-  // it's independent of all of that by construction (see bandPulseRef).
+  // コンポーネントの寿命いっぱい一度だけ開始し続ける
+  // （reducedMotionがONになるまで）。行ごと・reveal・glideのたびに
+  // 再トリガーする作りではない — bandPulseRef側の構造でそもそも
+  // それらと独立しているため。
   useEffect(() => {
     const pulseEl = bandPulseRef.current
     if (status !== 'active' || reducedMotion) {
@@ -173,15 +169,16 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
   const previewIndex = useCallback(
     (i: number, viaPointer = false) => {
       if (status !== 'active' || isAttackingRef.current || i === cursorIndex) return
-      // A fresh six mounts new buttons in the same screen positions as the
-      // old ones; if the real mouse hasn't moved since, the browser still
-      // fires mouseenter on whatever now sits under it. Ignore that phantom
-      // hover so a just-revealed list keeps its cursor on the first command
-      // instead of jumping to wherever the pointer happened to be resting.
+      // 新しい6つは古いボタンと同じ画面位置にマウントされる。実際のマウスが
+      // 動いていなければ、ブラウザは今そこにあるものに対してmouseenterを
+      // 発火してしまう。このフェイクなhoverを無視することで、revealした
+      // 直後の一覧のカーソルが先頭のままでいられる（ポインタがたまたま
+      // 止まっていた位置へ飛ばない）。
       if (viaPointer && performance.now() - lastPointerMoveAtRef.current > 120) return
-      // Moving the preview to a different row than the one currently
-      // armed (touch path) disarms it — arming means "the user tapped
-      // this exact row twice in a row," not "this row was ever armed."
+      // 現在armされている行と違う行へプレビューが移動したらdisarmする
+      // （タッチ経路）。armedが意味するのは「このまさに同じ行を連続で
+      // タップした」であって「過去に一度でもarmされたことがある」では
+      // ないため。
       if (armedIndexRef.current !== i) armedIndexRef.current = null
       const move = currentMoves[i]
       setCursorIndex(i)
@@ -193,8 +190,8 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
         'glide',
       )
       sound.playMove()
-      // Guards `i` being out of range for currentMoves (TS's array typing
-      // doesn't require this, but the index isn't statically guaranteed).
+      // iがcurrentMovesの範囲外になるケースのガード（TSの配列型は
+      // インデックスの範囲を静的に保証しないため）。
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       events?.onPreviewMove?.(move ? toEvent(move, i, attackCount + 1) : null)
     },
@@ -205,7 +202,7 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
     (i: number) => {
       if (status !== 'active' || isAttackingRef.current) return
       const move = currentMoves[i]
-      // Guards `i` being out of range for currentMoves (see previewIndex above).
+      // iがcurrentMovesの範囲外になるケースのガード（previewIndex参照）。
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!move) return
 
@@ -216,11 +213,11 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
       const payload = toEvent(move, i, attackCount + 1)
       sound.playAttack(move.id)
       events?.onAttackStart?.(payload)
-      // The band's own tap-confirm feedback — unrelated to whatever flies
-      // below, not a wind-up for it.
+      // band自体のタップ確定フィードバック — この下で飛ばす演出の
+      // 予備動作ではなく、無関係な独立した演出。
       anim.squeezeBand(bandRef.current, reducedMotion)
 
-      // What flies is the move's icon, not the whole row.
+      // 飛ぶのは行全体ではなく技アイコン。
       const fromEl = iconElsRef.current[i]
       const fxLayer = fxLayerRef.current
       if (!fromEl || !fxLayer) {
@@ -246,12 +243,12 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
         })
       }
 
-      // A short beat after the squeeze, not the same instant — squeeze and
-      // flight are two separate micro-interactions, and starting them
-      // together read as one fused motion rather than "confirm, then the
-      // move launches." Skipped under reducedMotion: playAttackFlight
-      // already resolves synchronously there, so a delay would only stall
-      // the HP/reveal update with nothing to show for it.
+      // squeezeの直後ではなく少し間を置く — squeezeと飛翔は別々の
+      // マイクロインタラクションであり、同時に始めると「確定してから
+      // 技が発動する」ではなく1つの動きに融合して見えてしまう。
+      // reducedMotion下はスキップ: playAttackFlightがそちらでは
+      // 同期的に即解決するため、遅延させてもHP/reveal更新を
+      // 何もないまま足止めするだけになる。
       if (reducedMotion) {
         launchFlight()
       } else {
@@ -271,12 +268,12 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
     ],
   )
 
-  // The click/tap gate: on a device with real hover, a click always
-  // confirms immediately (hover already served as the preview step). On
-  // touch, the first activation of a row that isn't already armed just
-  // arms it (previewIndex, called from onFocus just before this fires on
-  // the same tap, has already moved the band there) — only a second
-  // activation of that same row confirms.
+  // クリック/タップのゲート: 実ホバーを持つ端末ではクリックは常に
+  // 即confirm（ホバーが既にプレビュー役を果たしているため）。
+  // タッチ端末では、まだarmされていない行への最初のアクティベートは
+  // armするだけ（この直前に同じタップでonFocusから呼ばれたpreviewIndexが
+  // 既にbandをそこへ動かしている）— 同じ行への2回目のアクティベートで
+  // 初めてconfirmする。
   const handleRowActivate = useCallback(
     (i: number) => {
       if (status !== 'active' || isAttackingRef.current) return
@@ -297,11 +294,11 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
       e.preventDefault()
       const delta = e.key === 'ArrowDown' ? 1 : -1
       const next = (cursorIndex + delta + currentMoves.length) % currentMoves.length
-      // Moving DOM focus is enough — the target's onFocus handler calls
-      // previewIndex itself. Calling previewIndex here too would double-fire
-      // it: React hasn't committed the new cursorIndex yet when focus()
-      // synchronously triggers onFocus, so its own i === cursorIndex guard
-      // wouldn't see this call as a no-op.
+      // DOMフォーカスを動かすだけでよい — 対象のonFocusハンドラが
+      // previewIndexを自分で呼ぶ。ここでも呼ぶと二重発火する:
+      // focus()が同期的にonFocusを発火させる時点でReactはまだ新しい
+      // cursorIndexをcommitしていないため、previewIndex自身の
+      // i === cursorIndexガードがこの呼び出しをno-opと認識できない。
       itemElsRef.current[next]?.focus()
     },
     [status, cursorIndex, currentMoves.length],
@@ -309,28 +306,25 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
 
   return (
     <div className={clsx(styles.root, isAttacking && styles.isAttacking)} ref={rootRef}>
-      {/* No attack-count display here — タ・イクツ's own HP gauge
-          (BattleStatus) is the single place that shows "how many of 5
-          attacks remain" now. */}
+      {/* ここに攻撃回数の表示はない — タ・イクツ自身のHPゲージ
+          （BattleStatus）が「残り何回の攻撃か」を示す唯一の場所。 */}
       <header className={styles.zoneHeader}>
         <h2 className={styles.zoneTitle}>SKILL</h2>
       </header>
 
-      {/* Rendered through 'complete' too (not unmounted) — the 5th hit
-          flips status without emptying currentMoves (see
-          useCommandMenuController's commitAttack), so there's always a
-          real six to show here. Every handler below already no-ops once
-          status !== 'active', so leaving the last six in place is purely
-          cosmetic (a frozen final state, not newly-interactive dead
-          weight). */}
+      {/* 'complete'でもアンマウントしない（5回目のヒットは
+          useCommandMenuControllerのcommitAttackが示す通りcurrentMovesを
+          空にせずstatusだけ切り替えるため、ここには常に表示すべき
+          実在の6つがある）。以下の各ハンドラは全てstatus !== 'active'で
+          no-opになるので、最後の6つを残すのは見た目上の演出に過ぎず、
+          新たに操作可能な死んだUIが残るわけではない。 */}
       <div className={styles.listWrap} ref={listWrapRef}>
-        {/* Jagged torn-paper band (clip-path polygon) — bleeds past the
-            row's own left/right edges rather than sitting as a clean
-            rectangle. A single shared element GSAP glides between rows
-            via y/height, not one band per row. */}
+        {/* 破れた紙のようなギザギザのband（clip-pathのpolygon）—
+            行自体の左右端からはみ出して描画される。行ごとに1枚ではなく、
+            GSAPで行間をグライドする共有要素1枚。 */}
         <div className={styles.band} ref={bandRef} aria-hidden="true">
-          {/* Idle breathing glow — a separate GSAP target from the band
-              itself, see bandPulseRef's comment above. */}
+          {/* アイドル時の明滅 — band自体とは別のGSAPターゲット。詳細は
+              上のbandPulseRefのコメント参照。 */}
           <div className={styles.bandPulse} ref={bandPulseRef} />
         </div>
 

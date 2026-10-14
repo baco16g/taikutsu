@@ -21,31 +21,31 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { useSupportsHover } from '../hooks/useSupportsHover'
 import styles from './HomePage.module.css'
 
-/** How long the defeat message holds, fully readable, before the reveal starts covering the screen. */
+/** 撃破メッセージを、はっきり読める状態で保持してからrevealが画面を覆い始めるまでの時間。 */
 const DEFEAT_MESSAGE_HOLD_MS = 800
 
 /**
- * The app's single real screen, mounted at `/`: particles coalesce into
- * タ・イクツ, "必殺技を選ぶ" carries that same creature instance into battle,
- * then the 必殺技選択→撃破→ギャラリー flow runs to completion — all three
- * phases share one WorldFrame and one タ・イクツ for the whole session (see
- * src/features/intro/hooks/useIntroPhase.ts for why the creature can never be
- * nested inside either phase's own conditionally-rendered markup: it would
- * remount, losing its breathing phase/texture continuity, exactly what the
- * intro→battle handoff exists to avoid).
+ * このアプリの唯一の実画面、`/`にマウントされる: パーティクルが
+ * タ・イクツへ収束し、「必殺技を選ぶ」が同じクリーチャーインスタンスを
+ * そのまま戦闘へ持ち込み、必殺技選択→撃破→ギャラリーのフローが完走する
+ * ——3つのフェーズはセッションを通して1つのWorldFrameと1体のタ・イクツを
+ * 共有する（クリーチャーがどちらのフェーズの条件付きレンダリング
+ * マークアップ内にも入れ子にできない理由はsrc/features/intro/hooks/useIntroPhase.ts
+ * 参照: 入れ子にすると再マウントされ、呼吸フェーズ/テクスチャの連続性を
+ * 失ってしまう——それこそがintro→battleの引き継ぎが存在する理由そのもの）。
  */
 export function HomePage() {
   const reducedMotion = usePrefersReducedMotion()
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [announcement, setAnnouncement] = useState('')
 
-  // Reuses CommandMenu's own sound set (useCommandSound) and its
-  // hover-capability gate (useSupportsHover) so たたかう's hover cue is the
-  // same "move" blip the battle screen's command rows play on hover/focus,
-  // rather than a new, separate sound — and, like those rows, only on
-  // devices with real hover (a touch tap synthesizes a pointerenter right
-  // before the click anyway, which would make it fire the hover sound on
-  // every single tap instead of only genuine hover exploration).
+  // CommandMenu自身のサウンドセット（useCommandSound）とそのホバー対応
+  // ゲート（useSupportsHover）を再利用することで、「たたかう」のホバー
+  // サウンドは戦闘画面のコマンド行がホバー/フォーカス時に鳴らすのと
+  // 同じ「move」音になる（新規の別音ではなく）——そしてそれらの行と
+  // 同様に、実ホバーを持つ端末でのみ鳴らす（タッチのタップはクリック
+  // 直前にpointerenterを合成してしまうため、これをしないと本来の
+  // ホバー探索ではなく全てのタップでホバー音が鳴ってしまう）。
   const introSound = useCommandSound(soundEnabled)
   const supportsHover = useSupportsHover()
   const handleStartHover = useCallback(() => {
@@ -57,10 +57,10 @@ export function HomePage() {
   const [impactCount, setImpactCount] = useState(0)
   const chosenMovesRef = useRef<GalleryMove[]>([])
 
-  // impactCount (bumped the instant CommandMenu's onImpact fires, at
-  // icon-landing time) drives the visible HP bar immediately — not
-  // onHpChange below, which only fires once the creature's own ~0.5s morph
-  // animation finishes catching up.
+  // 表示上のHPバーを即座に動かすのはimpactCount（CommandMenuのonImpactが
+  // 発火した瞬間、アイコン着弾のタイミングで増える）であり、下の
+  // onHpChangeではない——onHpChangeはクリーチャー自身の約0.5秒の
+  // モーフアニメーションが追いつき終わった時点で初めて発火する。
   const hpRemaining = (ATTACK_LIMIT - impactCount) as Hp
 
   const [defeated, setDefeated] = useState(false)
@@ -107,10 +107,10 @@ export function HomePage() {
 
   const intro = useIntroPhase({ reducedMotion, onArrived: handleArrived })
 
-  // Mirrors the hit-signal-to-attack() wiring a plain creature-placeholder
-  // component would own internally — done by hand here since IntroActor
-  // (not such a placeholder) is what actually holds the shared タ・イクツ
-  // instance for this page (see the class doc comment above).
+  // 単純なクリーチャー・プレースホルダーコンポーネントなら内部で持つはずの
+  // 「hitシグナル→attach()」の配線をここで手動で行っている——IntroActor
+  // （そのようなプレースホルダーではない）がこのページの共有タ・イクツ
+  // インスタンスを実際に保持しているため（上のコンポーネントdocコメント参照）。
   const lastHitSignalRef = useRef(hitSignal)
   useEffect(() => {
     if (hitSignal === lastHitSignalRef.current) return
@@ -118,8 +118,8 @@ export function HomePage() {
     creatureRef.current?.attack()
   }, [hitSignal])
 
-  // The real "defeat animation actually finished playing" signal — not a
-  // guess from impactCount timing.
+  // 「撃破アニメーションが実際に再生し終わった」ことを示す本物のシグナル
+  // ——impactCountのタイミングからの推測ではない。
   const handleHpChange = (hp: Hp) => {
     if (hp === 0) handleDefeatComplete()
   }

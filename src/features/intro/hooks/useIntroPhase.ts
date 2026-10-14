@@ -5,7 +5,7 @@ import { MAX_SEED_RADIUS } from '../data/introSeeds'
 
 export type IntroPhase = 'arrival' | 'ready' | 'depart' | 'moving' | 'settling' | 'battle'
 
-/** Deliberately tuned durations for the formation/depart/travel/settle sequence — not arbitrary defaults. */
+/** formation/depart/travel/settleの各秒数は意図的に調整済み — 適当な初期値ではない。 */
 const TIMING = {
   delay: 0.22,
   formation: 1.35,
@@ -29,17 +29,18 @@ function measureDock(dockEl: HTMLElement, worldEl: HTMLElement): Box {
 
 export interface UseIntroPhaseOptions {
   reducedMotion: boolean
-  /** Called once the actor lands at the battle dock — the page wires battle-only side effects (none here) separately from this hook's own focus/announcement. */
+  /** 戦闘ドックへの着地が完了した瞬間に一度だけ呼ばれる — 戦闘開始時だけの副作用（今は無い）は、このhook自身のfocus/告知とは別にページ側で配線する。 */
   onArrived?: () => void
 }
 
 /**
- * Owns the intro→battle phase state machine: the single タ・イクツ instance
- * never remounts (see IntroActor) — this hook only ever measures two "dock"
- * placeholders and repaints one shared wrapper's transform/width to match.
- * All of the continuous animation (mask bloom, dust progress, the travel
- * tween) is GSAP-driven so `requestStart`'s mid-formation speedup is just
- * `tween.timeScale(4)` instead of hand-rolled elapsed-time math.
+ * intro→battleのフェーズ状態機械を管理する: タ・イクツの実体は一度も
+ * 再マウントされない（IntroActor参照）— このhookがやっているのは2つの
+ * "dock"プレースホルダーを計測し、共有ラッパー1つのtransform/widthを
+ * それに合わせて描き直すことだけ。連続的なアニメーション（マスクの
+ * ブルーム、ダストの進捗、移動tween）は全てGSAP駆動なので、
+ * requestStartの途中加速も手書きの経過時間計算ではなく
+ * tween.timeScale(4)で済む。
  */
 export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions) {
   const [phase, setPhase] = useState<IntroPhase>('arrival')
@@ -80,7 +81,7 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     }
   }, [])
 
-  /** Final position/opacity/focus for "just landed in battle" — used both by the normal settle timeout and by a resize that forces an in-flight transition to finish instantly. */
+  /** 「戦闘へ着地した直後」の最終的な位置/不透明度/フォーカス — 通常のsettleタイムアウトと、リサイズによって進行中の遷移を強制的に即終了させる場合の両方から使われる。 */
   const completeMove = useCallback(() => {
     repaintToDock(battleDockRef.current)
     if (battleSectionRef.current) gsap.set(battleSectionRef.current, { opacity: 1 })
@@ -92,7 +93,7 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     onArrived?.()
   }, [repaintToDock, onArrived])
 
-  /** Skips straight to the finished battle state — resize/rotation mid-transition, or reduced-motion engaging mid-transition. Never replays from the intro. */
+  /** 戦闘完了状態へ一足飛びに進める — 遷移の途中でのリサイズ/画面回転、または遷移途中でreduced-motionが有効化された場合用。introからのリプレイは一切行わない。 */
   const forceArriveAtBattle = useCallback(() => {
     gsap.killTweensOf(wrapperRef.current)
     gsap.killTweensOf(introSectionRef.current)
@@ -115,50 +116,47 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
       return
     }
 
-    // Capture the actor's current viewport position *before* the intro/battle
-    // layout swap — the swap can change #world's own height (and scroll),
-    // so this is the only way to know "where it visually is right now".
+    // intro/battleのレイアウト切り替え「前」にアクターの現在のビューポート
+    // 位置を記録する — 切り替えで#world自体の高さ（とスクロール）が
+    // 変わり得るため、「今まさに見た目上どこにあるか」を知る方法は
+    // これしかない。
     const viewportBefore = wrapper.getBoundingClientRect()
-    // Pin #world's own height to its current (intro) value across the
-    // swap — an explicit height, not just a min-height floor: on mobile
-    // (the World Container is height:auto there) battle's own
-    // content can be either taller OR shorter than intro's, and a floor
-    // alone only ever stopped it shrinking, not the instant snap upward
-    // the moment battle (e.g. its command list) needed more room than
-    // intro did. Tweened to battle's own natural height below instead of
-    // left to jump the instant the swap commits.
+    // 切り替えを跨いで#world自身の高さを現在（intro）の値に固定する —
+    // min-heightの下限だけでなく明示的なheightで。モバイル（World
+    // Containerがheight:autoになる）ではbattle側のコンテンツがintro側より
+    // 高くも低くもなり得るため、下限だけでは縮むのを止められても、
+    // battle（コマンド一覧など）がintroより広さを必要とした瞬間の
+    // 急激な拡大までは防げない。下でbattle自身の自然な高さへtweenさせ、
+    // 切り替え確定の瞬間に飛ぶままにはしない。
     const fromHeight = world.getBoundingClientRect().height
     world.style.height = `${fromHeight}px`
 
     flushSync(() => setPhase('moving'))
 
-    // Only NOW does the battle section (and its dock) actually exist in the
-    // DOM — it's gated behind the same `phase` this flushSync just
-    // committed. Reading battleDockRef any earlier always found it null,
-    // which silently fell back to the no-tween branch above on every run —
-    // the actor was snapping straight to its final spot instead of
-    // traveling there.
+    // battleセクション（とそのdock）が実際にDOMへ存在するのはここから —
+    // このflushSyncが今コミットしたのと同じphaseでゲートされている。
+    // それより前にbattleDockRefを読むと常にnullが返り、上のtweenなし
+    // 分岐へサイレントにフォールバックしていた——アクターは最終位置へ
+    // 移動するのではなく瞬間移動していた。
     const battleDock = battleDockRef.current
     if (!battleDock) {
       completeMove()
       return
     }
 
-    // Battle's own natural height, measured with the pin momentarily
-    // lifted and immediately restored — synchronous, so nothing paints in
-    // between and the unpinned size is never actually shown. On desktop
-    // the World Container's height is a fixed vh/px formula that doesn't
-    // depend on content, so fromHeight and toHeight come out identical
-    // there and the tween below is a harmless no-op — only mobile's
-    // height:auto breakpoint actually needs this tween.
+    // battle自身の自然な高さを、固定を一瞬だけ解除して即座に復元する形で
+    // 計測する — 同期的なので間に何も描画されず、固定解除中のサイズが
+    // 実際に表示されることはない。デスクトップではWorld Containerの
+    // 高さがコンテンツに依存しない固定のvh/px式なので、fromHeightと
+    // toHeightはそこでは同じ値になりこの先のtweenは無害なno-opになる —
+    // この処理が実際に必要なのはモバイルのheight:autoブレークポイントのみ。
     world.style.height = ''
     const toHeight = world.getBoundingClientRect().height
     world.style.height = `${fromHeight}px`
 
-    // Re-measure #world *after* the swap committed, then convert the
-    // pre-swap viewport position into the post-swap coordinate space — the
-    // actor's painted position is numerically different but visually
-    // identical, so nothing jumps.
+    // #worldを切り替え「後」に再計測し、切り替え前のビューポート位置を
+    // 切り替え後の座標系に変換する — アクターの描画位置は数値上は
+    // 変わるが見た目は同一なので、何も飛ばない。
     const worldAfter = world.getBoundingClientRect()
     const travelFrom: Box = {
       x: viewportBefore.left - worldAfter.left,
@@ -177,9 +175,8 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
 
     if (battleSectionRef.current) gsap.set(battleSectionRef.current, { opacity: 0 })
 
-    // Same duration/ease as the actor's own travel tween below, so the
-    // frame finishes resizing exactly as タ・イクツ lands rather than
-    // settling at a visibly different moment.
+    // 下のアクター自身の移動tweenと同じduration/easeにし、タ・イクツが
+    // 着地するのと枠のリサイズ完了が視覚的にずれないようにしている。
     gsap.to(world, { height: toHeight, duration: TIMING.travel, ease: 'power3.inOut' })
 
     moveTweenRef.current = gsap.to(wrapper, {
@@ -231,9 +228,10 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
       : []
 
     if (reducedMotion) {
-      // Nothing can have requested a start yet this early (mount, or a
-      // fresh reset) — unlike the reducedMotion-toggle effect below, which
-      // does need the pendingStart check since that one can fire mid-session.
+      // この時点（マウント、または明示的なリセット直後）ではまだ誰も
+      // startをリクエストできていない — 下のreducedMotion切り替えeffectとは
+      // 違い、こちらはセッション途中で発火し得ないのでpendingStartの
+      // チェックは不要。
       if (circles.length > 0) gsap.set(circles, { attr: { r: MAX_SEED_RADIUS } })
       dustProgressRef.current = 1
       setPhase('ready')
@@ -301,10 +299,11 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     startFormation()
   }, [clearSettleTimer, startFormation])
 
-  // Mount: paint the actor onto the intro dock before the browser's first
-  // paint (no flash-of-wrong-size/position), then kick off formation.
+  // マウント時: ブラウザの初回描画より前にアクターをintroドックへ描く
+  // （サイズ/位置が一瞬違って見えるちらつきを防ぐ）、その後formationを開始。
   useEffect(() => {
-    // Starts the GSAP formation timeline; not a render-derived state sync.
+    // GSAPのformationタイムラインを開始しているだけで、render由来の
+    // 状態同期ではない。
     // eslint-disable-next-line react-hooks/set-state-in-effect
     startFormation()
     return () => {
@@ -312,25 +311,25 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
       moveTweenRef.current?.kill()
       clearSettleTimer()
     }
-    // Deliberately mount-only — resetIntro is the explicit re-entry point
-    // for replaying, and reducedMotion changes are handled by the effect
-    // below rather than by re-running formation from scratch.
+    // 意図的にマウント時のみ — リプレイの再入口はresetIntroが明示的に
+    // 担い、reducedMotionの変化は下のeffectで扱うため、ここでformationを
+    // 最初からやり直すことはしない。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // The intro headline loads a webfont (Dela Gothic One), requested with
-  // display:swap, so the very first paint above already used the
-  // fallback — but the swap itself, whenever it lands, can change that
-  // headline's own box height, and with it the grid's total content
-  // height (the intro grid centers its content vertically), shifting
-  // where the dock actually sits. document.fonts.ready resolves once that
-  // swap (or its failure) has settled, so re-measuring then keeps the
-  // actor aligned with the dock's final, post-swap position — a silent
-  // repaint, not a re-run of startFormation, so it never restarts the
-  // particle formation or snaps a mid-transition actor.
+  // introの見出しはウェブフォント（Dela Gothic One）をdisplay:swapで
+  // 読み込むため、上の初回描画は既にフォールバックで行われている —
+  // しかしそのswapがいつ完了しようと、見出し自身のボックス高さが
+  // 変わり得て、それに伴いグリッド全体のコンテンツ高さ（introグリッドは
+  // 縦中央寄せ）も変わり、dockの実際の位置がずれる。document.fonts.ready
+  // はそのswap（または失敗）が確定した時点で解決するので、その時点で
+  // 再計測することでswap後の最終的なdock位置とアクターのずれを静かに
+  // 補正できる — startFormationの再実行ではなくあくまで静かな再描画
+  // なので、パーティクルformationが再始動したり遷移途中のアクターが
+  // 飛んだりすることはない。
   useEffect(() => {
     const fonts = document.fonts
-    // lib.dom types this as always present; older browsers may lack it.
+    // lib.domの型では常に存在する扱いだが、古いブラウザでは欠けることがある。
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!fonts) return
     let cancelled = false
@@ -348,8 +347,8 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     }
   }, [repaintToDock])
 
-  // prefers-reduced-motion flipping on mid-session: finish whatever's in
-  // flight immediately rather than leaving a long tween half-reduced.
+  // prefers-reduced-motionがセッション途中でONになった場合: 長いtweenを
+  // 中途半端に縮小したまま残さず、進行中のものを即座に完了させる。
   useEffect(() => {
     if (!reducedMotion) return
     const current = phaseRef.current
@@ -368,9 +367,9 @@ export function useIntroPhase({ reducedMotion, onArrived }: UseIntroPhaseOptions
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion])
 
-  // Resize/rotation: reposition without disturbing an idle phase; force an
-  // in-flight transition to its finished state rather than resuming a stale
-  // tween against now-outdated dock geometry.
+  // リサイズ/画面回転: 待機中のフェーズは位置だけ直して乱さず、遷移途中の
+  // ものは今や古くなったdockの座標に対して半端なtweenを再開させるのではなく
+  // 完了状態へ強制的に進める。
   useEffect(() => {
     const onResize = () => {
       const current = phaseRef.current

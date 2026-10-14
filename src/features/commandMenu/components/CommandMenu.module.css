@@ -3,15 +3,16 @@
   width: 100%;
   height: 100%;
   color: var(--color-ink);
-  /* No outer border/panel — the zone reads as "a place in the world" via
-     the halo behind it (HomePage.module.css's .commandAnchor::before) and
-     the list rows' own thin dividers, not a card edge. */
+  /* 外枠のborder/パネルはない——このゾーンは背後のhalo
+     （HomePage.module.cssの.commandAnchor::before）と一覧行自身の
+     細い区切り線によって「世界の中の一箇所」として読め、カードの
+     エッジとしては読まれない。 */
   padding: 10px 10px 4px 0;
 }
 
-/* ---------- Command Zone header ---------- */
-/* No attack-count readout here — see the comment in CommandMenu.tsx;
-   タ・イクツ's own HP gauge is the single "N of 5 left" indicator now. */
+/* ---------- Command Zoneヘッダー ---------- */
+/* ここに攻撃回数の表示はない——CommandMenu.tsx内のコメント参照。
+   タ・イクツ自身のHPゲージが今や唯一の「残りN/5」の表示。 */
 
 .zoneHeader {
   position: relative;
@@ -19,9 +20,9 @@
   margin: 0 3px 13px 10px;
 }
 
-/* SKILL, not スキル — same monospace stack as .index's row numbers, so
-   this reads as the same small HUD-style readout rather than a bold
-   Japanese title in a totally different typeface. */
+/* 「スキル」ではなく「SKILL」——.indexの行番号と同じモノスペース
+   フォントなので、全く別の書体の太い日本語タイトルとしてではなく
+   同じ小さなHUD風の表示として読める。 */
 .zoneTitle {
   margin: 0;
   font-family: var(--font-mono);
@@ -30,7 +31,7 @@
   letter-spacing: 0.02em;
 }
 
-/* ---------- command list ---------- */
+/* ---------- コマンド一覧 ---------- */
 
 .listWrap {
   position: relative;
@@ -45,15 +46,15 @@
   padding: 0;
 }
 
-/* GSAP (useCommandMenuAnimation) only ever tweens y/height/opacity/scaleY
-   on this element, reading the active item's offsetTop/offsetHeight —
-   left untouched, including that measurement, so this box's height still
-   exactly matches the row's own text height. The visible black shape
-   lives on ::before instead (below), inset slightly past this box's own
-   top/bottom — that's what gives the band a little extra breathing room
-   around the text without changing what GSAP measures or animates: the
-   ::before rides along with every y/height/opacity/scaleY tween applied
-   here for free, since a pseudo-element moves and scales with its host. */
+/* GSAP（useCommandMenuAnimation）がこの要素に対してtweenするのは
+   常にy/height/opacity/scaleYのみで、アクティブな項目の
+   offsetTop/offsetHeightを読む——その計測も含めて一切変更しないので、
+   このボックスの高さは常に行自身のテキスト高さとぴったり一致する。
+   実際に見える黒い形は代わりに::before（下）にあり、このボックス自身の
+   上下端よりわずかにinsetしている——これにより、GSAPが計測/
+   アニメーションする対象を変えずに、bandがテキストの周りに少し余白を
+   持てる: ::beforeは疑似要素なのでホストと一緒に移動・拡縮し、ここで
+   適用されるy/height/opacity/scaleYのtweenに追加コストなしで追従する。 */
 .band {
   position: absolute;
   left: -34px;
@@ -69,8 +70,8 @@
   content: '';
   position: absolute;
   z-index: 1;
-  /* A little taller than the row text — top/bottom only; left/right bleed
-     is already handled by the parent's own left/right above. */
+  /* 行のテキストより少し高い——上下方向のみ。左右へのはみ出しは
+     既に上の親自身のleft/rightで処理済み。 */
   inset: -6px 0;
   background: var(--color-ink);
   clip-path: polygon(
@@ -87,14 +88,13 @@
   );
 }
 
-/* The idle breathing glow — a real child, not another pseudo-element,
-   because GSAP needs its own DOM node to animate independently of
-   everything else happening to .band (see CommandMenu.tsx's
-   bandPulseRef). Same shape as ::before, sitting just behind it (z-index
-   0 < 1) so the solid band always stays on top covering the text; GSAP
-   animates its opacity up from 0 and scale up from 1, so at rest it's
-   invisible and only ever visible as a soft halo growing past ::before's
-   own edges. */
+/* アイドル時の明滅——別の疑似要素ではなく実際の子要素にしているのは、
+   GSAPが.bandに起きる他の全てとは独立してアニメーションさせるための
+   自前のDOMノードを必要とするため（CommandMenu.tsxのbandPulseRef
+   参照）。::beforeと同じ形で、そのすぐ背後（z-index 0 < 1）に座り、
+   塗りのbandが常にテキストを覆う最前面にとどまるようにしている。
+   GSAPがopacityを0から、scaleを1から上げていくので、静止時は不可視で、
+   ::before自身の輪郭を越えて広がる柔らかいhaloとしてのみ見える。 */
 .bandPulse {
   position: absolute;
   z-index: 0;
@@ -119,9 +119,8 @@
   position: relative;
 }
 
-/* Slight tilt (not a perfectly horizontal rule) — one of the few
-   deliberately-imperfect touches that keeps the compact grid from
-   reading as "整いすぎ". */
+/* わずかな傾き（完全な水平線ではない）——コンパクトなグリッドが
+   「整いすぎ」て見えないようにする、意図的な不完全さのひとつ。 */
 .divider {
   position: absolute;
   bottom: 0;
@@ -134,10 +133,9 @@
   pointer-events: none;
 }
 
-/* The divider sits at bottom:0 of its own item (one divider = the line
-   between THIS row and the next), so it's the *last* item's divider that
-   would draw a stray line between row 6 and the footer below it with
-   nothing to separate. */
+/* 区切り線は自分自身のitemのbottom:0にある（1本の区切り線＝「この行」と
+   次の行の間の線）。つまり、分けるものが何もない6行目とその下の
+   footerの間に迷い線を描いてしまうのは、*最後の*itemの区切り線。 */
 .item:last-child .divider {
   display: none;
 }
@@ -161,13 +159,13 @@
   color: inherit;
   appearance: none;
   transition: color 0.15s ease;
-  /* The whole row (index/icon/text/arrow together), not just the text —
-     a hair off .divider's own -0.6deg rather than an exact copy, so
-     index/icon/arrow tilt along with the name/description instead of
-     staying perfectly level against a tilted text block. transform
-     doesn't affect layout box metrics, so the shared cursor band's
-     offsetTop/offsetHeight-based GSAP math (useCommandMenuAnimation)
-     stays correct regardless. */
+  /* テキストだけでなく行全体（index/icon/text/arrowまとめて）を傾ける
+     ——.divider自身の-0.6degをそのまま複製せずわずかにずらしている
+     のは、index/icon/arrowが傾いたテキストブロックに対して完全に
+     水平のままではなく、name/descriptionと一緒に傾くようにするため。
+     transformはレイアウトボックスの寸法に影響しないので、共有
+     カーソルbandのoffsetTop/offsetHeightベースのGSAP計算
+     （useCommandMenuAnimation）はこれに関わらず正しいまま保たれる。 */
   transform: rotate(-0.45deg);
   transform-origin: left;
 }
@@ -209,13 +207,13 @@
   white-space: nowrap;
 }
 
-/* Full text, never truncated — wraps to as many lines as it needs rather
-   than clipping with an ellipsis. Rows use min-height (not a fixed
-   height), so a 2-3 line description just grows its own row instead of
-   breaking the layout; the shared cursor band re-reads each row's actual
-   offsetHeight on every move (useCommandMenuAnimation's moveCursorBand),
-   so it already tracks whatever height a row ends up at without any
-   change needed there. */
+/* テキストは全文表示、省略は一切しない——省略記号で切るのではなく
+   必要な行数だけ折り返す。行は固定heightではなくmin-heightを使って
+   いるので、2〜3行の説明文もレイアウトを壊さずその行自身が伸びる
+   だけで済む。共有のカーソルbandは移動のたびに各行の実際の
+   offsetHeightを読み直す（useCommandMenuAnimationのmoveCursorBand）ので、
+   行がどんな高さに落ち着こうとも、こちら側で何も変更せずに既に
+   追従する。 */
 .desc {
   display: block;
   font-size: 12px;
@@ -234,8 +232,8 @@
     color 0.15s ease;
 }
 
-/* Selection inverts color only — row height/font-size stay constant, so
-   the shared band's height tween never has to chase a layout shift. */
+/* 選択は色の反転のみ——行の高さ/フォントサイズは一定のままなので、
+   共有bandのheight tweenがレイアウトの変化を追いかける必要が一切ない。 */
 .cmd.isActive {
   color: var(--color-page-background);
 }
@@ -253,7 +251,7 @@
   transform: translate(2px, -2px);
 }
 
-/* ---------- footer ---------- */
+/* ---------- フッター ---------- */
 
 .footer {
   position: relative;
@@ -264,12 +262,12 @@
   justify-content: flex-end;
 }
 
-/* A solid paper-colored tag, not plain underlined text — this sits right
-   where the world background is busiest (dense screentone + the diagonal
-   slash wedge), and semi-transparent text read directly against that was
-   reported as hard to see. An opaque backdrop of its own guarantees
-   contrast regardless of whatever's behind it, same reasoning as
-   BattleStatus's own HP label badge treatment. */
+/* 単なる下線付きテキストではなく、塗りの紙色タグにしている——ここは
+   世界の背景が最も賑やかな場所（密なスクリーントーン+斜めのslash
+   楔形）にあり、それに直接重なる半透明テキストは見づらいと報告が
+   あった。自前の不透明な背景を持たせることで、背後に何があろうと
+   コントラストが保証される。BattleStatus自身のHPラベルバッジの
+   扱いと同じ理由。 */
 .reroll {
   appearance: none;
   background: var(--color-paper);
@@ -281,8 +279,8 @@
   letter-spacing: 0.03em;
   color: var(--color-ink);
   cursor: pointer;
-  /* Same tilt as .cmd, so this reads as part of the same family of
-     elements rather than a perfectly level outlier next to them. */
+  /* .cmdと同じ傾き。これによりこの要素が隣で完全に水平な異質な存在
+     としてではなく、同じ要素群の一部として読める。 */
   transform: rotate(-0.45deg);
   transform-origin: 50% 50%;
 }
@@ -298,13 +296,13 @@
   cursor: default;
 }
 
-/* ---------- attack-in-flight state ---------- */
+/* ---------- 攻撃飛翔中の状態 ---------- */
 
 .root.isAttacking .list {
   pointer-events: none;
 }
 
-/* ---------- flying-attack fx layer (unrotated, viewport-space) ---------- */
+/* ---------- 攻撃飛翔のfxレイヤー（回転なし、viewport座標系） ---------- */
 
 .fxLayer {
   position: fixed;
@@ -346,12 +344,12 @@
   pointer-events: none;
 }
 
-/* ---------- responsive ---------- */
-/* Both breakpoints below are @container queries against world-outer (the
-   shared container name declared on WorldFrame's own scroll root), not
-   viewport @media — the debug panel changes actual available content
-   width at a given viewport size, so only a container query switches at
-   the same real content width whether the panel is open or not. */
+/* ---------- レスポンシブ ---------- */
+/* 下の2つのブレークポイントはどちらも、ビューポート@mediaではなく
+   world-outer（WorldFrame自身のスクロールルートに宣言された共有の
+   コンテナ名）に対する@containerクエリ——world-outer自身の左右padding
+   ぶん実際に使えるコンテンツ幅はビューポート幅と異なるため、vwベースの
+   @mediaではなくこの要素の実際の幅を直接見るコンテナクエリにしている。 */
 
 @container world-outer (min-width: 1600px) {
   .root {
@@ -372,13 +370,12 @@
 }
 
 @container world-outer (max-width: 799px) {
-  /* SP isn't fighting the PC corner box's height budget the way desktop
-     is, but it has its own tight budget now that descriptions wrap
-     instead of truncating: タ・イクツ + all 6 rows need to mostly fit in
-     one phone screen, so every row's padding/line-height/min-height is
-     trimmed from the wider-screen values, and the text column is widened
-     (narrower index/icon/arrow + tighter gaps) so fewer descriptions wrap
-     to a 2nd line in the first place. */
+  /* SPはデスクトップのような角のボックスの高さ予算との戦いはないが、
+     説明文が省略されず折り返すようになった今、SP自身の厳しい予算がある:
+     タ・イクツ+全6行がほぼ1画面に収まる必要があるので、各行の
+     padding/line-height/min-heightは広い画面向けの値から削り、text
+     カラムを広げる（index/icon/arrowを狭くし隙間を詰める）ことで、
+     そもそも2行目へ折り返す説明文を減らしている。 */
   .root {
     padding: 8px 4px 4px 0;
   }
@@ -419,9 +416,9 @@
     padding-right: 26px;
   }
 
-  /* The selected band bleeds to the physical screen edge. A generous
-     negative offset plus the page's own overflow-x:hidden clips it
-     flush, without needing exact px math here. */
+  /* 選択中のbandは物理的な画面端まではみ出す。大きめの負のオフセットと
+     ページ自身のoverflow-x:hiddenの組み合わせで、ここで正確なpx計算を
+     せずともぴったりクリップされる。 */
   .band {
     left: -260px;
     right: -260px;

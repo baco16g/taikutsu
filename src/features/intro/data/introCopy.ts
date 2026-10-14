@@ -1,11 +1,10 @@
 /**
- * Intro screen copy, centralized so editing it never means hunting through
- * JSX. `body`'s entries are each an array of line segments (same shape as
- * `title`, joined with <br/> by HomePage.tsx) rather than a single string —
- * deliberately breaking at a phrase boundary (the comma) regardless of the
- * container's width, instead of leaving the wrap point to whatever the
- * browser's natural reflow lands on, which drifted between 1 line and an
- * awkward mid-phrase 2-line break as the window resized.
+ * intro画面の文言。集約しておくことで、編集のたびにJSXの中を探し回らずに済む。
+ * `body`の各要素は1つの文字列ではなく（`title`と同じ形の）行分割済みの
+ * 配列で、HomePage.tsxが<br/>で結合する——コンテナの幅に関わらず
+ * 意図的に句読点（読点）の位置で改行させるためで、ブラウザの自然な
+ * 折り返しに任せると、ウィンドウのリサイズで1行になったり不自然な
+ * 文の途中で2行に割れたりして揺れていた。
  */
 export const INTRO_COPY = {
   eyebrow: 'PLAY OUTSIDE THE LINES.',

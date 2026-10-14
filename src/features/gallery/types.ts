@@ -1,13 +1,12 @@
-/** One of the player's chosen moves for this session. */
 export interface GalleryMove {
   id: string
   name: string
 }
 
 /**
- * A real tie between a displayed game and one of the player's chosen moves.
- * `experience` is the move's own `shortDescription` from data/specialMoves.json,
- * reused verbatim — never a per-game blurb invented for this screen.
+ * 表示中のゲームとプレイヤーが選んだ技の実際の結びつき。
+ * `experience`はdata/specialMoves.jsonにあるその技自身の`shortDescription`を
+ * そのまま流用している——この画面向けにゲームごとの文章を新たに考えることは決してない。
  */
 export interface GalleryConnection {
   moveId: string
@@ -24,10 +23,9 @@ export interface GalleryGame {
   thumbnailAlt: string
   sourceUrl: string
   /**
-   * Strong ties to the fixture's chosen moves, straight from
-   * data/gameIntros.json's relatedMoves. An empty array is a real result
-   * (this slot has no strong tie to what the player picked) — never filled
-   * in or guessed by the UI.
+   * 選ばれた技への強い結びつき。data/gameIntros.jsonのrelatedMovesから
+   * そのまま。空配列も実際の結果の一つ（この枠はプレイヤーが選んだものと
+   * 強い結びつきがない）——UI側が埋めたり推測したりすることはない。
    */
   connections: GalleryConnection[]
 }

@@ -7,11 +7,10 @@
 }
 
 /* ======================================================================
-   App Canvas — viewport-wide. A plain top-to-bottom flex column: brand
-   header, then the World Container, then the footer, all in normal flow.
-   Chrome and World Container can never overlap each other because
-   nothing here is absolutely overlaid on top of anything else at this
-   level.
+   App Canvas — ビューポート全幅。上から下への単純なflexカラム:
+   ブランドヘッダー、World Container、フッターの順で通常フローに並ぶ。
+   このレベルでは何も絶対配置で重ねられていないため、chromeとWorld
+   Containerが互いに重なることは決してない。
    ====================================================================== */
 
 .outer {
@@ -24,57 +23,58 @@
   padding: clamp(18px, 2.6vh, 30px) clamp(20px, 4vw, 64px) clamp(14px, 2.4vh, 24px);
   overflow-x: hidden;
   overflow-y: auto;
-  /* Reserves the scrollbar's own width whether or not it's actually
-     showing, so toggling overflow-y between auto/hidden (e.g. the
-     battle→gallery reveal locking scroll mid-transition) never shifts
-     this column's content horizontally by the scrollbar's width. */
+  /* スクロールバーが実際に表示されているかどうかに関わらずその幅を
+     確保しておくことで、overflow-yをauto/hidden間で切り替えても
+     （例: battle→galleryのrevealが遷移中にスクロールをロックする場合）
+     このカラムのコンテンツがスクロールバーの幅ぶん水平にずれることが
+     決してない。 */
   scrollbar-gutter: stable;
-  /* Named container for the side-by-side/stacked switch below, shared by
-     this component's own CSS and every screen's content CSS (e.g.
-     HomePage.module.css) that needs to switch layout at the same real
-     content width. A container query against this element's own rendered
-     width, rather than a viewport @media — the debug sidebar changes the
-     actual available content width at a given viewport size, so only a
-     container query tracks the real breakpoint whether the panel is open
-     or not. CSS Modules only scopes class *selectors*, not this name, so
-     it's deliberately left as a plain, shared literal rather than a
-     module-local token. */
+  /* 下の横並び/スタック切り替え用の名前付きコンテナ。このコンポーネント
+     自身のCSSと、同じ実コンテンツ幅でレイアウトを切り替える必要がある
+     各画面のコンテンツCSS（例: HomePage.module.css）の両方で共有される。
+     ビューポート@mediaではなくこの要素自身のレンダリング幅に対する
+     コンテナクエリにしている理由: .outer自身の左右paddingとスクロール
+     バー用の確保幅ぶん、実際に使えるコンテンツ幅はビューポート幅より
+     狭く、vwベースの@mediaではその差を考慮できない——コンテナクエリ
+     なら、この要素の本当の幅を直接見られる。CSS Modulesがハッシュ化
+     するのはクラス「セレクタ」のみでこの名前自体は対象外なので、
+     モジュールローカルなトークンにはせず意図的に素の共有リテラルの
+     ままにしてある。 */
   container-type: inline-size;
   container-name: world-outer;
 }
 
 /* ======================================================================
-   World Container — sizing uses ratio/clamp, never fixed px:
-     width:  min(92%, 1440px)   (% of .outer, not vw — see note on
-                                  .worldContainer below)
+   World Container — サイズ指定は常に比率/clampで、固定pxは使わない:
+     width:  min(92%, 1440px)   （.outerに対する%であってvwではない——
+                                  下の.worldContainerの注釈参照）
      height: min(82vh, 880px)
      min-height: 640px
-   No overflow:hidden / clip-path on this box itself — the frame's clipped
-   paper shape lives on its own layer behind the content (.worldDeco,
-   z-index:-1), so border/clip-path interaction bugs and accidental
-   clipping of a screen's own content are both structurally impossible
-   here.
+   この箱自体にはoverflow:hidden / clip-pathを付けていない——フレームの
+   クリップされた紙の形はコンテンツの背後にある独立したレイヤー
+   （.worldDeco、z-index:-1）に存在するので、border/clip-pathの相互作用
+   バグや画面自身のコンテンツが誤ってクリップされることが、構造的に
+   ここでは起こり得ない。
    ====================================================================== */
 
 .worldContainer {
   position: relative;
   isolation: isolate;
   flex: 0 0 auto;
-  /* % of .outer (the flex column), not vw: vw is relative to the viewport
-     regardless of ancestors, so with a debug sidebar beside .outer (a
-     sibling a real, sidebar-less screen wouldn't have) vw would overshoot
-     outer's actual available width. % gives the identical
-     92%-with-a-1440px-cap result in the sidebar-less case while staying
-     correct here too. */
+  /* vwではなく.outer（flexカラム）に対する%: vwは祖先に関わらず
+     ビューポート基準だが、.outer自身に左右paddingがある分、実際に
+     使える幅はビューポート幅より狭い——vwだとその差を考慮できず
+     outer自身の実際に使える幅をはみ出してしまう。%なら常にouter
+     自身の実際の幅を基準にできる。 */
   width: min(92%, 1440px);
   max-width: 100%;
   height: min(82vh, 880px);
   min-height: 640px;
 }
 
-/* ---------- World Decoration: frame lines, paper shape, screentone,
-   diagonal accents — a stack of independent absolutely-positioned layers,
-   not a border/clip-path combo on a single shared box. ---------- */
+/* ---------- World Decoration: フレームの線、紙の形、スクリーントーン、
+   斜めのアクセント——1つの共有ボックスへのborder/clip-pathの組み合わせ
+   ではなく、独立した絶対配置レイヤーの積み重ね。 ---------- */
 
 .worldDeco {
   position: absolute;
@@ -83,9 +83,9 @@
   pointer-events: none;
 }
 
-/* Thinned decoration (decorationStrength="thin") — for a screen whose own
-   headline/body/button are meant to be the loudest things on screen, where
-   the frame's own accent marks would otherwise compete for attention. */
+/* 薄くした装飾（decorationStrength="thin"）——画面自身の見出し/本文/
+   ボタンこそが最も目立つべき画面向け。そうしなければフレーム自身の
+   アクセントが注意を奪い合ってしまう。 */
 .worldDecoThin .horizon,
 .worldDecoThin .slashEcho {
   display: none;
@@ -108,10 +108,10 @@
   opacity: 0.5;
 }
 
-/* The World Container's own silhouette — corner cuts top-left and a few
-   small stepped notches along the right/bottom edges. This clip-path is
-   what gives the "Broken Frame" its shape; the line segments below only
-   retrace parts of it, deliberately not all of it. */
+/* World Container自身のシルエット——左上のコーナーカットと、右/下端に
+   沿ったいくつかの小さな段差のノッチ。この"Broken Frame"の形を作って
+   いるのはこのclip-path自体で、下の線分はその一部だけをなぞっており、
+   意図的に全部はなぞっていない。 */
 .worldSurface {
   position: absolute;
   inset: 0;
@@ -168,8 +168,8 @@
   border-left: 1px dashed rgba(20, 20, 20, 0.45);
 }
 
-/* Right+bottom are deliberately partial — a dashed implied-edge on the
-   right, a short solid run on the bottom, not full edges. */
+/* 右+下は意図的に部分的——右は破線のほのめかし的な端、下は短い実線の
+   連なりで、完全な辺にはしていない。 */
 .frameRight {
   position: absolute;
   top: 9%;
@@ -224,10 +224,9 @@
   transform: rotate(-45deg);
 }
 
-/* Screentone — three layers at different dot density, each clipped to its
-   own wedge and positioned bottom-right, so density concentrates toward
-   that corner and stays quiet elsewhere instead of one flat, uniform
-   pattern. */
+/* スクリーントーン——密度の異なる3層。それぞれ独自の楔形にクリップ
+   され右下に配置されているので、密度はその角に向かって集中し、
+   平坦で均一なパターンにはならず他の場所は控えめなまま。 */
 .tone {
   position: absolute;
   bottom: -9px;
@@ -303,7 +302,7 @@
   background: linear-gradient(to right, #c6c5bf, #deddd7 67%, transparent);
 }
 
-/* ---------- world note (bottom-left) ---------- */
+/* ---------- world note（左下） ---------- */
 
 .worldNote {
   position: absolute;
@@ -334,11 +333,12 @@
 }
 
 /* ======================================================================
-   Responsive — exactly two layout modes, one breakpoint (799px of actual
-   content width): side-by-side and stacked. @container against the
-   shared world-outer name (see .outer above), not a viewport @media. Any
-   screen's own content CSS mirrors this exact breakpoint the same way,
-   since the frame and that content must switch together.
+   レスポンシブ — ちょうど2つのレイアウトモード、1つのブレークポイント
+   （実コンテンツ幅799px）: 横並びとスタック。ビューポート@mediaでは
+   なく共有のworld-outerという名前（上の.outer参照）に対する@container。
+   フレームとそのコンテンツは一緒に切り替わらなければならないため、
+   どの画面自身のコンテンツCSSもこの同じブレークポイントをそのまま
+   踏襲する。
    ====================================================================== */
 
 @container world-outer (max-width: 799px) {

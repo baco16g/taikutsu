@@ -8,7 +8,7 @@ interface MineralFilterProps {
   patchSeed: number
 }
 
-/** One mineral filter instance. Two of these (different seeds) are cross-faded and drifted at different rates to read as flowing, without ever re-running the filter itself. */
+/** 鉱物フィルターのインスタンス1つ分。これを2つ（別シード）用意し、異なる速度でクロスフェード・driftさせることで、フィルター自体を再実行せずに流れているように見せる。 */
 function MineralFilter({ id, grainSeed, patchSeed }: MineralFilterProps) {
   return (
     <filter id={id} x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
@@ -51,14 +51,14 @@ function MineralFilter({ id, grainSeed, patchSeed }: MineralFilterProps) {
 }
 
 /**
- * Pure SVG filter noise: no raster assets, scales for free, and — because
- * none of the filter primitive attributes are ever animated from JS — the
- * browser paints them once and composites the (cheap) transform/opacity
- * animations on top instead of re-running the filter every frame.
+ * 純粋なSVGフィルターによるノイズ: ラスター素材を使わないので拡大縮小も
+ * タダ、かつフィルタープリミティブの属性をJSから一切アニメーションしない
+ * ため、ブラウザは一度だけ描画して、その上に（軽い）transform/opacityの
+ * アニメーションを合成するだけで済み、毎フレームフィルターを再実行しない。
  *
- * Two filter instances (different seeds) are cross-faded and drifted at
- * independent speeds by TextureLayer, which reads as the grain itself
- * shifting rather than a single static image sliding around.
+ * 2つのフィルターインスタンス（別シード）をTextureLayerがクロスフェード
+ * させ独立した速度でdriftさせることで、1枚の静止画がスライドするのでは
+ * なく、粒子そのものが揺らいでいるように見える。
  */
 export function TextureFilters({ idPrefix }: TextureFiltersProps) {
   return (
@@ -77,17 +77,17 @@ interface TextureLayerProps {
 }
 
 /**
- * Two drifting/cross-fading copies of the filtered noise (different seeds)
- * plus a rim vignette for ambient occlusion (no gloss, per spec — this is
- * meant to read as matte, not metallic). Lives inside the creature's
- * clipPath group.
+ * フィルタリング済みノイズをdrift/クロスフェードさせる2枚のコピー
+ * （別シード）と、アンビエントオクルージョン用のリムビネット
+ * （仕様通りツヤなし——マットに見せる狙いで、金属的には見せない）。
+ * クリーチャーのclipPathグループの内側に存在する。
  *
- * Layer B blends with 'screen', not 'overlay'/'multiply': this texture's
- * tones are already dark and low-contrast, and both of those modes fold
- * toward *darker* when both inputs are dark — at higher cross-fade opacity
- * that was visibly crushing the grain toward flat black. 'screen' only ever
- * brightens, so the second layer adds visible fleck/variation instead of
- * eating it.
+ * レイヤーBは'overlay'/'multiply'ではなく'screen'でブレンドしている:
+ * このテクスチャの色調は元々暗く低コントラストで、
+ * overlay/multiplyはどちらも両方の入力が暗いとさらに「暗く」畳まれる
+ * ——クロスフェードのopacityが高くなるにつれ、それが目に見えて粒子を
+ * 真っ黒へ潰していた。'screen'は常に明るくなる方向にしか働かないので、
+ * 2枚目のレイヤーは質感を食い潰す代わりに見える斑点/変化を足す。
  */
 export function TextureLayer({ idPrefix, size, driftRefA, driftRefB }: TextureLayerProps) {
   const pad = size * 0.3

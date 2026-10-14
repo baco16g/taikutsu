@@ -4,25 +4,26 @@ import { INTRO_SEEDS } from '../data/introSeeds'
 import styles from './ArrivalDust.module.css'
 
 /**
- * Small dark grains flying in from around タ・イクツ's own box toward the
- * same seed points IntroActor's reveal mask grows from — purely decorative,
- * independent canvas sized by useOversizedCanvas (same shared setup
- * src/features/taikutsu/components/HitParticles.tsx uses), but with its own one-shot
- * "coalesce toward a point" motion instead of HitParticles' decaying
- * outward burst. Mounted only while the intro's arrival phase is live; the
- * parent unmounting it is what stops it (no internal lifecycle beyond that).
+ * タ・イクツ自身の箱の周囲からIntroActorのrevealマスクが成長していく
+ * のと同じシード点へ向かって飛んでくる、小さな暗い粒——純粋に演出用で、
+ * useOversizedCanvasでサイズ計算される独立したcanvas（
+ * src/features/taikutsu/components/HitParticles.tsxが使うのと同じ共有セットアップ）だが、
+ * HitParticlesの減衰しながら外へ広がるバーストとは違い、こちらは
+ * 「1点へ収束する」一度きりの動き。introのarrivalフェーズが生きている
+ * 間だけマウントされ、親がアンマウントすることで止まる（それ以外の
+ * 内部ライフサイクルはない）。
  */
 
 const CANVAS_OVERFLOW = 1.5
 const PARTICLE_COUNT = 70
-const TRAVEL_SPAN = 0.7 // fraction of total progress each particle's own flight takes
+const TRAVEL_SPAN = 0.7 // 全体の進捗のうち、各パーティクル自身の飛行にあてる割合
 const DOT_COLOR = '#202022'
 
 interface Particle {
   angle: number
-  distance: number // fraction of the box's own half-size, start radius
+  distance: number // 箱自身の半分のサイズに対する割合、開始半径
   targetIndex: number
-  delay: number // 0..(1-TRAVEL_SPAN), when this particle's own flight begins
+  delay: number // 0..(1-TRAVEL_SPAN)、このパーティクル自身の飛行がいつ始まるか
   size: number
   curve: number
 }
@@ -32,7 +33,7 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 const mix = (a: number, b: number, t: number) => a + (b - a) * t
 
 export interface ArrivalDustProps {
-  /** 0..1 formation progress, mutated every frame by useIntroPhase's GSAP tween — polled here rather than passed as a prop so this canvas's own rAF loop (required for drawing) isn't gated behind React's render cycle. */
+  /** 0〜1のformation進捗。useIntroPhaseのGSAP tweenが毎フレーム書き換える——propsとして渡すのではなくここでポーリングしているのは、このcanvas自身のrAFループ（描画に必要）がReactのレンダーサイクルにゲートされないようにするため。 */
   progressRef: React.RefObject<number>
 }
 
@@ -44,8 +45,8 @@ export function ArrivalDust({ progressRef }: ArrivalDustProps) {
   const particles = useMemo<Particle[]>(() => {
     let state = 1
     const rand = () => {
-      // Local LCG, independent of introSeeds' own PRNG instance — only
-      // needs to look plausibly scattered, not match any other sequence.
+      // introSeeds自身のPRNGインスタンスとは独立したローカルLCG——
+      // 何か別の系列と一致させる必要はなく、もっともらしく散らばって見えればよい。
       state = (state * 1103515245 + 12345) & 0x7fffffff
       return (state % 10000) / 10000
     }
@@ -67,7 +68,7 @@ export function ArrivalDust({ progressRef }: ArrivalDustProps) {
 
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw)
-      // useOversizedCanvas already applies the DPR transform on resize.
+      // useOversizedCanvasがリサイズ時に既にDPRのtransformを適用済み。
       const { boxW, boxH, canvasW, canvasH, offsetX, offsetY } = sizeRef.current
       ctx.clearRect(0, 0, canvasW, canvasH)
       const t = progressRef.current

@@ -5,47 +5,45 @@ import { mulberry32 } from '../../taikutsu/lib/prng'
 import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
 
 /**
- * The real recommendation engine: computes which games to show from the
- * player's actual chosen move ids, using data/gameIntros.json's embedded
- * `relatedMoves` (strong/medium per move) as the only signal.
+ * 実体のある推薦エンジン: プレイヤーが実際に選んだ技idから、
+ * data/gameIntros.jsonに埋め込まれた`relatedMoves`（技ごとのstrong/medium）
+ * のみを信号として表示するゲームを決める。
  *
- * `docs/research/gameMoveAssociations.json` (1080 associations, the
- * research artifact whose own `note` field names `src/recommend.ts` as its
- * intended consumer) was considered and deliberately NOT used. Checked
- * against data/gameIntros.json directly:
- * - Its `confidence` field is 1:1 derived from `relevance` (strong→high,
- *   medium→medium per that same note) — no extra ranking signal.
- * - Its `grounds` field is evidentiary quote text, not a score.
- * - For every game gameIntros.json actually ships, the two files'
- *   moveId/relevance pairs are identical (verified programmatically). The
- *   1080 vs. ~1009 count difference is entirely associations for ~70 games
- *   that aren't in the runtime-bundled gameIntros.json at all (no
- *   thumbnail/intro/catchphrase to render them with anyway).
- * So it's the same strong/medium data in a different shape plus
- * un-actionable provenance text — not a superset with real extra signal.
- * Wiring it in would mean shipping a 644KB research file (or the even
- * larger docs/research/gameIntros.full.json, to cover those extra games)
- * for zero decision-relevant benefit. gameIntros.json alone — already
- * bundled, already the fixture's own data source — is the better call.
+ * `docs/research/gameMoveAssociations.json`（1080件の関連データで、その
+ * `note`フィールド自身が`src/recommend.ts`を想定利用者としている研究成果物）
+ * は検討した上で意図的に使わなかった。data/gameIntros.jsonと直接突き合わせた結果:
+ * - `confidence`フィールドは`relevance`から1対1で導出されている
+ *   （同じnoteによればstrong→high、medium→medium）— 追加のランキング信号はない。
+ * - `grounds`フィールドは根拠となる引用テキストであり、スコアではない。
+ * - gameIntros.jsonが実際に配信する全ゲームについて、両ファイルの
+ *   moveId/relevanceの組は完全に一致する（プログラムで検証済み）。
+ *   1080件と約1009件の差は、ランタイムにバンドルされるgameIntros.jsonに
+ *   そもそも存在しない約70ゲーム分の関連データに過ぎない
+ *   （どのみちthumbnail/intro/catchphraseがなく表示できない）。
+ * つまり同じstrong/mediumデータを別の形で持っているだけで、かつ
+ * 実行時には使いようのない出典テキストが付いているだけ——実質的に
+ * 追加の判断材料を持つ上位互換ではない。組み込むと644KBの研究用
+ * ファイル（あるいはその約70ゲーム分も含めるならさらに大きい
+ * docs/research/gameIntros.full.json）を配信することになり、判断に
+ * 寄与する効果はゼロ。既にバンドル済みでfixtureのデータ源でもある
+ * gameIntros.json単体の方が良い選択。
  *
- * Algorithm (preserves the retired fixture's split concept): of the 6
- * games returned, up to 4 have a confirmed strong tie to one of the
- * player's chosen moves ("strong-tie" picks); the rest are "discovery"
- * picks with no strong tie to anything chosen, for serendipity. Strong-tie
- * candidates are drawn round-robin across the distinct chosen moves (each
- * move's own candidate list seeded-shuffled first) so the 4 slots spread
- * across different moves instead of piling onto whichever move happens to
- * have the most strongly-tied games. If fewer than 4 strong-tie candidates
- * exist for the given moves, the shortfall is simply filled with more
- * discovery picks — the total returned is always exactly
- * `TOTAL_GAME_COUNT`.
+ * アルゴリズム（廃止済みfixtureが持っていた分割の考え方を踏襲）:
+ * 返す6作品のうち最大4件はプレイヤーが選んだいずれかの技との確実な
+ * strongな結びつき（「strong-tie」枠）、残りは何の技とも強い結びつきを
+ * 持たない「discovery」枠（セレンディピティ用）。strong-tie候補は選ばれた
+ * 技ごとにラウンドロビンで引く（各技ごとの候補一覧は事前にシード付き
+ * シャッフル済み）ことで、4枠がたまたま最も多くのstrong-tieゲームを
+ * 持つ技に偏らず複数の技へ分散する。対象の技に対するstrong-tie候補が
+ * 4件に満たない場合は、不足分をdiscovery枠で単純に埋める——返却数は
+ * 常にちょうど`TOTAL_GAME_COUNT`になる。
  *
- * The whole thing is seeded from the chosen move ids themselves (via
- * mulberry32, the project's existing PRNG at src/features/taikutsu/lib/prng.ts)
- * so the same set of chosen moves always reproduces the same gallery
- * (deterministic for tests/snapshots), while a different set varies which
- * games surface. The seed is order-independent (ids are deduped and sorted
- * first) — which moves you chose matters, not the order you clicked them.
+ * 全体は選ばれた技id自体からシードする（本プロジェクト既存のPRNGである
+ * src/features/taikutsu/lib/prng.tsのmulberry32経由）ため、同じ技の組み合わせは
+ * 常に同じギャラリーを再現し（テスト/スナップショット向けに決定的）、
+ * 違う組み合わせでは表示されるゲームが変わる。シードは順序に依存しない
+ * （idは重複排除とソートを先に行う）——選んだ技の「組み合わせ」が結果を
+ * 左右し、クリックした「順番」は影響しない。
  */
 
 interface RawRelatedMove {
@@ -71,13 +69,13 @@ const GAMES_BY_ID = new Map<string, RawGame>(
 )
 const ALL_GAME_IDS: string[] = Array.from(GAMES_BY_ID.keys())
 
-/** Exactly how many games the gallery always shows — GalleryCarousel's own aria-label count stays in sync with this via `games.length`, not a second hardcoded number. */
+/** ギャラリーが常に表示するゲーム数 — GalleryCarousel側のaria-labelの件数は`games.length`経由でこれと同期しており、別途ハードコードされた数値ではない。 */
 export const TOTAL_GAME_COUNT = 6
 
-/** The upper bound on strong-tie picks among the `TOTAL_GAME_COUNT`; the rest are discovery picks (see module doc comment). */
+/** `TOTAL_GAME_COUNT`のうちstrong-tie枠の上限。残りはdiscovery枠（モジュール先頭のdocコメント参照）。 */
 const STRONG_TIE_TARGET = 4
 
-/** A reasonable demo/default chosen-move set, used when no real session exists (see recommendGames's `chosenMoveIds` param doc). */
+/** 実セッションが存在しない場合に使う、デモ/デフォルト用の選択技セット（recommendGamesの`chosenMoveIds`パラメータ解説を参照）。 */
 const DEFAULT_CHOSEN_MOVE_IDS = ['C01', 'C13', 'C17', 'C21', 'C27']
 
 export const DEFAULT_CHOSEN_MOVES: GalleryMove[] = DEFAULT_CHOSEN_MOVE_IDS.map((id) => {
@@ -96,7 +94,7 @@ function buildConnections(game: RawGame, chosenMoveIds: ReadonlySet<string>): Ga
     })
 }
 
-/** The carousel's card is 440px wide at its largest (GalleryCarousel.module.css's --card-w), so this covers up to 2x pixel density without shipping the CDN's full-res (1920px) source. */
+/** カルーセルのカードは最大で440px幅（GalleryCarousel.module.cssの--card-w）。2倍密度のディスプレイまでをカバーしつつ、CDN原寸（1920px）はそのまま配信しない。 */
 const THUMBNAIL_WIDTH_PX = 880
 
 function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryGame {
@@ -124,7 +122,7 @@ function isStronglyTiedToMove(game: RawGame, moveId: string): boolean {
   return game.relatedMoves.some((rel) => rel.relevance === 'strong' && rel.moveId === moveId)
 }
 
-/** FNV-1a (32-bit) over the sorted, deduped move ids — a stable, order-independent seed for mulberry32. */
+/** ソート・重複排除済みの技idに対するFNV-1a（32bit）— mulberry32向けの、順序に依存しない安定したシード。 */
 function seedFromMoveIds(moveIds: readonly string[]): number {
   let hash = 0x811c9dc5
   for (const id of moveIds) {
@@ -146,10 +144,9 @@ function shuffled<T>(items: readonly T[], rand: () => number): T[] {
 }
 
 /**
- * Round-robins across `moveIds` (each pass picks at most one new game per
- * move) to spread the strong-tie picks across different chosen moves,
- * stopping once `count` games are picked or every move's candidate queue
- * is exhausted — whichever comes first.
+ * `moveIds`をラウンドロビンで回し（1周につき各技最大1件）、strong-tie枠が
+ * 選ばれた技の間に分散するようにする。`count`件選び終えるか全ての技の
+ * 候補キューが尽きるか、どちらか早い方で止まる。
  */
 function pickStrongTieGameIds(
   moveIds: readonly string[],
@@ -190,14 +187,14 @@ function pickStrongTieGameIds(
 }
 
 /**
- * Computes the `TOTAL_GAME_COUNT` games to show for this player's session.
+ * このプレイヤーのセッションに対して表示する`TOTAL_GAME_COUNT`件のゲームを計算する。
  *
- * @param chosenMoveIds The player's actual chosen move ids for this
- *   session (from battle→gallery), in any order and any count — handles 0
- *   (no real session: falls back to an all-discovery gallery), as well as
- *   counts other than the game's current 5-per-session rule should that
- *   ever change. Pass `DEFAULT_CHOSEN_MOVE_IDS`-derived ids (see
- *   `DEFAULT_CHOSEN_MOVES`) for a sensible demo/no-session result.
+ * @param chosenMoveIds プレイヤーがこのセッション（battle→gallery）で
+ *   実際に選んだ技id。順序・件数は問わない——0件（実セッションなしの場合:
+ *   全件discoveryのギャラリーにフォールバック）や、現状の「1セッション5件」
+ *   というルールが将来変わった場合の別件数にも対応する。実セッションが
+ *   ない場合のデモ用には`DEFAULT_CHOSEN_MOVE_IDS`由来のid
+ *   （`DEFAULT_CHOSEN_MOVES`参照）を渡す。
  */
 export function recommendGames(chosenMoveIds: readonly string[]): GalleryGame[] {
   const uniqueMoveIds = Array.from(new Set(chosenMoveIds)).sort()
@@ -217,9 +214,9 @@ export function recommendGames(chosenMoveIds: readonly string[]): GalleryGame[] 
   const discoveryPicks = shuffled(discoveryPool, rand).slice(0, discoveryNeeded)
 
   const selected = [...strongPicks, ...discoveryPicks]
-  // Only reachable if the dataset ever shrinks below TOTAL_GAME_COUNT —
-  // keeps the "always exactly 6" contract GalleryCarousel's aria-label
-  // relies on even in that degenerate case.
+  // データセットがTOTAL_GAME_COUNTを下回った場合にのみ到達する分岐 —
+  // その縮退したケースでも、GalleryCarouselのaria-labelが前提とする
+  // 「常にちょうど6件」という契約を守る。
   if (selected.length < TOTAL_GAME_COUNT) {
     const usedSet = new Set(selected)
     const filler = shuffled(

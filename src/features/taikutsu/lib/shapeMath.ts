@@ -1,5 +1,5 @@
 export interface BlobPoint {
-  /** degrees, fixed per index across every HP state so morph targets stay point-aligned */
+  /** 度数。全HP状態を通してインデックスごとに固定されており、モーフ先の点が常に対応した位置を保つ */
   angle: number
   radius: number
 }
@@ -17,8 +17,8 @@ export const blobPointToVec2 = (point: BlobPoint, cx: number, cy: number): Vec2 
 })
 
 /**
- * Closed Catmull-Rom spline through the given points, converted to cubic beziers.
- * Point order/angle must stay fixed across states so morphing never twists.
+ * 与えられた点を通る閉じたCatmull-Romスプラインを、3次ベジェに変換したもの。
+ * 点の順序/角度は状態を通して固定しておく必要があり、そうしないとモーフ時にねじれてしまう。
  */
 export const blobPointsToPath = (
   points: BlobPoint[],

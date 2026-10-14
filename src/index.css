@@ -1,9 +1,9 @@
 @import './styles/tokens.css';
 
-/* Subsetted to the 8 characters the intro/battle headline actually uses
-   (退屈を、たおせ！) — see index.html's matching preload. Regenerate from
+/* intro/battleの見出し（退屈を、たおせ！）が実際に使う8文字分だけの
+   サブセット——index.htmlの対応するpreloadも参照。この文言が変わったら
    https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=<headline>
-   if that copy ever changes. */
+   から再生成する。 */
 @font-face {
   font-family: 'Dela Gothic One';
   font-style: normal;
@@ -32,9 +32,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Visually hidden but still announced by screen readers — used across
-   several components for live-region announcements and link context, so
-   it lives here once rather than as a CSS Modules class repeated per file. */
+/* 見た目には隠れているがスクリーンリーダーには読み上げられる——複数の
+   コンポーネントでライブリージョンの告知やリンクの文脈説明に使われる
+   ため、各ファイルにCSS Modulesのクラスとして重複させずここに一箇所
+   だけ置いている。 */
 .sr-only {
   position: absolute;
   width: 1px;

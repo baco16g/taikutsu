@@ -7,14 +7,16 @@
 
 .art {
   position: relative;
-  /* Square, matching the shared タ・イクツ instance IntroActor paints over
-     this dock — there's no child here to size it implicitly. */
+  /* 正方形。IntroActorがこのドックの上に描画する共有タ・イクツ
+     インスタンスに合わせてある——ここには暗黙にサイズを決める子要素は
+     存在しない。 */
   aspect-ratio: 1;
-  /* cqw, not vw: sized off the positioning wrapper's own actual column
-     width (HomePage sets container-type:inline-size on it), so the
-     creature tracks whatever that column's fluid clamp() formula resolves
-     to at any viewport width instead of a second, independently-tuned
-     viewport-relative formula that can drift out of sync with it. */
+  /* vwではなくcqw: 位置決め用ラッパー自身の実際のカラム幅
+     （HomePageがそこにcontainer-type:inline-sizeを設定している）を
+     基準にサイズを決める。これにより、独立して調整された、ずれ得る
+     もう1つのビューポート相対の式ではなく、そのカラムの可変clamp()式が
+     どのビューポート幅でどう解決されようとクリーチャーはそれに
+     追従する。 */
   width: clamp(120px, 88cqw, 300px);
   margin: 0 auto;
 }
@@ -56,7 +58,7 @@
   color: rgba(20, 20, 20, 0.4);
 }
 
-/* The sole "N of 5 attacks left" indicator on screen. */
+/* 画面上で唯一の「残りN/5攻撃」の表示。 */
 .hp {
   display: flex;
   align-items: center;
@@ -66,11 +68,11 @@
   transition: opacity 0.4s ease;
 }
 
-/* An outlined tag, not a solid-filled one — a solid black label next to
-   solid black "filled" gauge segments made the two unreadable as separate
-   things. The border keeps it reading as a bold, deliberate UI tag;
-   leaving the inside unfilled is what separates "this is the caption"
-   from "this is a filled point of HP". */
+/* 塗りつぶしではなく輪郭だけのタグ——塗りつぶしの黒いラベルを塗り
+   つぶしの黒い「満タン」ゲージセグメントの隣に置くと、2つが別物として
+   読み取れなくなった。borderによって、これは太く意図的なUIタグとして
+   読める。内側を塗らないことが、「これはキャプションである」と
+   「これは満タンのHPの1目盛りである」を区別している。 */
 .hpLabel {
   display: inline-flex;
   align-items: center;
@@ -94,13 +96,14 @@
   background: var(--color-ink);
 }
 
-/* Mirrors WorldFrame's own world-outer breakpoint — see WorldFrame.module.css's
-   comment on .outer for why this is a container query, not a viewport @media. */
+/* WorldFrame自身のworld-outerブレークポイントをそのまま踏襲——
+   ビューポート@mediaではなくコンテナクエリにしている理由は
+   WorldFrame.module.cssの.outerのコメント参照。 */
 @container world-outer (max-width: 799px) {
   .art {
-    /* Smaller than the side-by-side cqw formula on purpose: on a phone the
-       command list below needs most of the screen height, so タ・イクツ
-       trades size for vertical budget here specifically. */
+    /* 横並び時のcqw式より意図的に小さくしてある: スマートフォンでは
+       下のコマンド一覧が画面高さの大半を必要とするため、ここでは
+       タ・イクツがそのために縦方向の余地をサイズと引き換えにしている。 */
     width: clamp(86px, 24vw, 128px);
   }
 

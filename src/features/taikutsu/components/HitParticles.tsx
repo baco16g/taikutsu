@@ -26,12 +26,12 @@ interface HitParticlesProps {
 
 const SHARD_COLOR = '#141414'
 
-// The particle canvas is deliberately bigger than the creature's own box
-// (see CANVAS_OVERFLOW / useOversizedCanvas below) so flung debris has room
-// to travel. EDGE_FADE_START/END describe, as a fraction of that canvas's
-// half-size, where particles start dissolving and where they're fully gone
-// — well inside the true canvas edge, so nothing is ever visibly clipped by
-// a box boundary.
+// パーティクル用canvasは、飛び散った破片が移動する余地を持てるよう
+// クリーチャー自身の箱より意図的に大きくしてある（下のCANVAS_OVERFLOW /
+// useOversizedCanvas参照）。EDGE_FADE_START/ENDは、そのcanvasの半径に
+// 対する割合として、パーティクルが溶け始める位置と完全に消える位置を
+// 表す——本当のcanvas端よりも十分内側なので、箱の境界で目に見えて
+// 切り取られることは決してない。
 const EDGE_FADE_START = 0.55
 const EDGE_FADE_END = 0.92
 
@@ -60,20 +60,20 @@ const drawParticle = (ctx: CanvasRenderingContext2D, p: Particle, edgeFade: numb
   ctx.restore()
 }
 
-// How much bigger than the creature's own box the particle canvas is, so
-// debris has room to fly and fade before reaching any edge. Kept modest
-// (rather than e.g. 2x+) so it stays inside the stage's own overflow:hidden
-// bounds on narrower viewports instead of just moving the hard clip edge
-// further out.
+// パーティクル用canvasがクリーチャー自身の箱よりどれだけ大きいか——
+// 破片が端に達する前に飛んで消える余地を持てるように。控えめな値に
+// 留めている（2倍以上などにしない）のは、狭いビューポートでも
+// ステージ自身のoverflow:hidden範囲内に収まるようにするため
+// （単に硬いクリップ端を外側へ動かすだけにしないため）。
 const CANVAS_OVERFLOW = 1.6
 
 export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const rafRef = useRef<number | null>(null)
-  // boxW/boxH: the creature's own box (what xFrac/yFrac are relative to).
-  // canvasW/canvasH: the larger particle surface. offsetX/offsetY: where the
-  // box sits within that surface (so box-relative coords can be recentred).
+  // boxW/boxH: クリーチャー自身の箱（xFrac/yFracが相対的に指す対象）。
+  // canvasW/canvasH: より大きいパーティクル用の描画面。offsetX/offsetY:
+  // その描画面内で箱がどこに位置するか（箱基準の座標を再中心化するため）。
   const sizeRef = useOversizedCanvas(canvasRef, CANVAS_OVERFLOW)
 
   const ensureLoop = useCallback(() => {
@@ -85,7 +85,7 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
         rafRef.current = null
         return
       }
-      // useOversizedCanvas already applies the DPR transform on resize.
+      // useOversizedCanvasがリサイズ時に既にDPRのtransformを適用済み。
       const { canvasW, canvasH } = sizeRef.current
       ctx.clearRect(0, 0, canvasW, canvasH)
 
@@ -107,7 +107,7 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
 
         const dist = Math.hypot(p.x - centerX, p.y - centerY)
         const edgeFade = 1 - clamp01((dist - fadeStart) / (fadeEnd - fadeStart))
-        if (edgeFade <= 0) continue // dissolved into the fade zone, not clipped by an edge
+        if (edgeFade <= 0) continue // 端で切られたのではなくフェードゾーンで溶けて消えた
 
         drawParticle(ctx, p, edgeFade)
         next.push(p)
@@ -129,8 +129,8 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
       burst: (xFrac, yFrac, big) => {
         const { boxW, boxH, canvasW, canvasH, offsetX, offsetY } = sizeRef.current
         if (boxW === 0 || boxH === 0) return
-        // xFrac/yFrac are relative to the creature's own box; recentre into
-        // the larger canvas, which is offset symmetrically around that box.
+        // xFrac/yFracはクリーチャー自身の箱に対する相対値。より大きい
+        // canvas（その箱を中心に対称にオフセットされている）へ再中心化する。
         const originX = offsetX + xFrac * boxW
         const originY = offsetY + yFrac * boxH
         const cx = canvasW / 2
@@ -192,9 +192,9 @@ export function HitParticles({ ref, reducedMotion }: HitParticlesProps) {
   }, [])
 
   return (
-    // left/top/width/height are set imperatively by useOversizedCanvas —
-    // the canvas is intentionally larger than this element's own box and
-    // centred over it, so it isn't sized via CSS percentages here.
+    // left/top/width/heightはuseOversizedCanvasが命令的に設定する——
+    // このcanvasは意図的にこの要素自身の箱より大きく、その上に中央寄せで
+    // 重ねられるので、ここではCSSのパーセンテージでサイズ指定しない。
     <canvas ref={canvasRef} style={{ position: 'absolute', pointerEvents: 'none' }} />
   )
 }

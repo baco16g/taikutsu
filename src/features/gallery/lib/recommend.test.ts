@@ -17,7 +17,7 @@ interface RawGame {
 const RAW_GAMES = gameIntrosData.games as RawGame[]
 const MOVE_NAMES_BY_ID = new Map(specialMovesData.moves.map((m) => [m.id, m.name] as const))
 
-/** The real game ids with a strong tie to `moveId`, straight from data/gameIntros.json — used to verify the engine against the bundled data, not a second hand-picked fixture. */
+/** `moveId`にstrongで結びついている実際のゲームid。data/gameIntros.jsonそのまま——エンジンをバンドル済みデータそのものに対して検証するためで、別に手で用意した2つ目のfixtureではない。 */
 function gamesStronglyTiedTo(moveId: string): Set<string> {
   return new Set(
     RAW_GAMES.filter((g) =>
@@ -33,8 +33,8 @@ describe('recommendGames', () => {
     expect(recommendGames(DEFAULT_MOVE_IDS)).toHaveLength(TOTAL_GAME_COUNT)
     expect(recommendGames([])).toHaveLength(TOTAL_GAME_COUNT)
     expect(recommendGames(['C01'])).toHaveLength(TOTAL_GAME_COUNT)
-    // A move id with no strongly-tied games at all in the dataset — the
-    // shortfall must be made up with extra discovery picks, not a short result.
+    // データセット内にstrong-tieのゲームが一つもない技id——不足分は
+    // 結果を短くするのではなく、discovery枠を追加で補って埋めなければならない。
     expect(recommendGames(['NOT_A_REAL_MOVE_ID'])).toHaveLength(TOTAL_GAME_COUNT)
   })
 
@@ -54,14 +54,14 @@ describe('recommendGames', () => {
     expect(tiedPicks.length).toBeGreaterThan(0)
 
     for (const game of tiedPicks) {
-      // Every pick claiming a connection really is in the strong-tie universe for these moves.
+      // connectionを持つと主張する選出は、実際にこれらの技のstrong-tie宇宙に含まれている。
       expect(strongTieUniverse.has(game.id)).toBe(true)
       for (const connection of game.connections) {
-        // Every claimed connection moveId is one of the actual chosen moves...
+        // 主張されているconnectionのmoveIdは、実際に選ばれた技のいずれかである……
         expect(chosenSet.has(connection.moveId)).toBe(true)
-        // ...really has a strong tie to this exact game in the raw data...
+        // ……生データ上でもこのまさにこのゲームと本当にstrong-tieである……
         expect(gamesStronglyTiedTo(connection.moveId).has(game.id)).toBe(true)
-        // ...and carries the move's real name/shortDescription, not invented text.
+        // ……そして作り話ではなく、その技の実際のname/shortDescriptionを運んでいる。
         expect(connection.moveName).toBe(MOVE_NAMES_BY_ID.get(connection.moveId))
       }
     }

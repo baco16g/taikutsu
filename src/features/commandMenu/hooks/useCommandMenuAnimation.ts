@@ -4,25 +4,24 @@ import gsap from 'gsap'
 import styles from '../components/CommandMenu.module.css'
 
 /**
- * Pure DOM choreography for the command menu: the selection band that
- * glides between rows (interruption-safe — GSAP handles the overwrite
- * automatically since every band tween targets the same
- * element/properties), the reveal when a fresh six appears, and the
- * attack flight + impact burst.
+ * コマンドメニューのための純粋なDOM振り付け: 行間をグライドする選択band
+ * （中断に強い — 全てのband tweenが同じ要素/プロパティを対象にしているため
+ * GSAPが上書きを自動で処理する）、新しい6つが現れた時のreveal、攻撃の
+ * 飛翔と着弾のバースト。
  *
- * Takes DOM elements rather than React refs-of-refs so it stays decoupled
- * from CommandMenu's render state; CommandMenu just calls these from its
- * event handlers and effects.
+ * React refのrefではなくDOM要素を直接受け取る作りにすることで、
+ * CommandMenuのrender状態から切り離している。CommandMenuは自身の
+ * イベントハンドラやeffectからこれらを呼ぶだけ。
  */
 /**
- * `itemEl`'s offset from `ancestorEl`, walking the `offsetParent` chain and
- * summing `offsetTop` along the way. Unlike `getBoundingClientRect()`, this
- * is immune to the menu's -6deg rotation: a rotated element's bounding
- * rect is its axis-aligned *visual* box (wider than tall becomes
- * taller-looking once rotated), which is the wrong number to feed back in
- * as another element's local `height`/`y`. offsetTop/offsetHeight are
- * defined purely in pre-transform layout space, which is what the band
- * (itself rotated by the same shared wrapper) actually needs.
+ * `ancestorEl`から見た`itemEl`のオフセットを、`offsetParent`チェーンを
+ * たどって`offsetTop`を積算することで求める。`getBoundingClientRect()`と
+ * 違い、メニューの-6度の回転の影響を受けない: 回転した要素のbounding
+ * rectは軸に沿った「見た目上の」ボックス（回転すると横長が縦長寄りに
+ * 見える）であり、それを別要素のローカルな`height`/`y`へそのまま
+ * フィードバックするのは誤り。offsetTop/offsetHeightは純粋に
+ * transform適用前のレイアウト空間で定義されており、これがband
+ * （同じ共有ラッパーによって同様に回転している）が本当に必要とする値。
  */
 function offsetTopWithin(itemEl: HTMLElement, ancestorEl: HTMLElement): number {
   let top = 0
@@ -39,19 +38,19 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
 
   const { contextSafe } = useGSAP({ scope: scopeRef })
 
-  // The idle breathing loop lives entirely on its own element
-  // (CommandMenu.tsx's bandPulseRef, a child of the band) rather than on
-  // bandEl itself. It used to share bandEl's own `scale` with
-  // glide/reveal/squeeze, and every one of those called overwrite:'auto'
-  // on the same property — so hovering a different row, or confirming an
-  // attack, killed the loop mid-cycle every time (reported: "次の操作で
-  // 上書きされて欲しくない"). A separate GSAP target for a separate DOM
-  // node can't be overwritten by a tween that never touches it: this
-  // keeps breathing continuously through glides/reveals/squeezes, which
-  // only ever move/resize/pop the *band*, not the pulse layer riding
-  // along inside it. (The pulse still visually inherits bandEl's own
-  // position/size/transform for free, since it's laid out and painted as
-  // bandEl's content — only its *own* animation is independent.)
+  // アイドル時の明滅ループは、bandEl自身ではなく専用の別要素
+  // （CommandMenu.tsxのbandPulseRef、bandの子要素）だけに存在する。
+  // 以前はbandEl自身の`scale`をglide/reveal/squeezeと共有しており、
+  // それらは全て同じプロパティに対してoverwrite:'auto'を呼んでいた
+  // ため、別の行にホバーしたり攻撃を確定したりするたびにループが
+  // サイクルの途中で毎回止まっていた（報告: 「次の操作で上書きされて
+  // 欲しくない」）。別のDOMノードに対する別のGSAPターゲットは、
+  // それに一切触れないtweenによって上書きされようがない:
+  // これにより、band自体の位置/サイズ/popを動かすだけの
+  // glide/reveal/squeezeを挟んでも明滅は途切れず続く。（なお明滅層は
+  // bandElのcontentとしてレイアウト・描画されるため、その位置/サイズ/
+  // transformは何もせずとも自動的に継承される——独立しているのは
+  // 明滅「自身」のアニメーションだけ。）
   const startIdlePulse = contextSafe((pulseEl: HTMLElement | null) => {
     if (!pulseEl) return
     gsap.to(pulseEl, {
@@ -129,21 +128,20 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
     )
   })
 
-  // A confirm-tap bounce, not a shrink: the row's name/description sit on
-  // top of this element as a separate layer and only read as legible
-  // (pale text) because the band is behind them at full size — a
-  // shrink-to-55%-height squeeze pulled the band away from the text's own
-  // top/bottom edges, exposing pale text directly against the page's
-  // light background for the ~90ms of the tween. Opacity stays at 1 for
-  // the same reason — a dip there reduces the same contrast the scale fix
-  // is protecting.
+  // 確定タップのバウンスであり、縮小ではない: 行の名前/説明はこの要素の
+  // 上に別レイヤーとして乗っており、band自体が等倍で背後にあることで
+  // 初めて（淡色テキストとして）読める状態になる——高さ55%への縮小
+  // squeezeは、bandをテキスト自身の上下端から引き離してしまい、
+  // tweenの約90msの間、淡色テキストがページの明るい背景に直接露出して
+  // 読めなくなる。opacityを1のまま保っているのも同じ理由——ここで
+  // 落とすと、scaleの修正が守っているのと同じコントラストを損なう。
   //
-  // A small 0.98 anticipation dip before the pop (duration 0.05s) gives it
-  // a "press down, then spring up" feel — a brief compress-before-release
-  // instead of a pure expand. Nowhere near the old 0.55 squeeze: at 0.98
-  // for 50ms the exposed sliver is sub-pixel and imperceptible, which is
-  // the deliberate trade-off between "reads as a press" and "never
-  // compromises the text's legibility."
+  // ポップの前に小さく0.98まで沈み込む予備動作（duration 0.05秒）を
+  // 入れることで、「押し込んでから跳ね上がる」感触を出している——
+  // 単純な拡大ではなく圧縮してから解放する動き。以前の0.55の
+  // squeezeとは程遠い: 0.98で50msなら露出する隙間はサブピクセルで
+  // 知覚できず、「押した感触」と「テキストの可読性を一切損なわない」の
+  // 間での意図的なトレードオフ。
   const squeezeBand = contextSafe((bandEl: HTMLElement | null, reducedMotion: boolean) => {
     if (!bandEl) return
     if (reducedMotion) return
@@ -155,16 +153,17 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
   })
 
   /**
-   * Flies a clone of `fromEl` toward `targetEl`'s center, with a trailing
-   * line as the "attack trajectory", then bursts a few shards at impact.
-   * Resolves once the flight (not the burst clean-up) has landed, so the
-   * caller can fire onImpact / onAttackComplete at the right moments.
+   * `fromEl`の複製を`targetEl`の中心へ飛ばし、「攻撃の軌跡」として
+   * 尾を引く線を伴わせ、着弾時に破片を数個弾けさせる。（後片付けの
+   * バーストではなく）飛翔自体が着地した時点でresolveするので、
+   * 呼び出し側はonImpact / onAttackCompleteを正しいタイミングで
+   * 発火できる。
    */
   const playAttackFlight = contextSafe(
     (opts: {
-      // The move's own icon (CommandMenu.tsx's iconElsRef), not the whole
-      // row — flying the full row read as "the command itself leaves the
-      // menu," when the point is just launching the move at タ・イクツ.
+      // 行全体ではなく技自身のアイコン（CommandMenu.tsxのiconElsRef）—
+      // 行全体を飛ばすと「コマンドそのものがメニューから出ていく」ように
+      // 読めてしまうが、本来やりたいのは技をタ・イクツへ発射すること。
       fromEl: SVGSVGElement
       targetEl: HTMLElement | null
       fxLayer: HTMLElement
@@ -210,15 +209,14 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
       projectile.style.width = `${fromRect.width}px`
       projectile.style.height = `${fromRect.height}px`
       projectile.style.margin = '0'
-      // The icon inherits currentColor from wherever it's sitting on the
-      // row — white while the row is selected (on the black band). Pinned
-      // to a fixed dark color here so it stays visible flying across the
-      // page's own light background, independent of the row's state.
+      // アイコンは置かれている場所のcurrentColorを継承する——行が選択中
+      // （黒いband上）なら白になる。ページ自身の明るい背景を横切って
+      // 飛ぶ間も見えるよう、行の状態に関わらずここで濃い色に固定している。
       projectile.style.color = 'var(--color-ink)'
       fxLayer.appendChild(projectile)
-      // A 15px icon is too small to read mid-flight across the page —
-      // scaled up on spawn (shrinking back down toward the target below)
-      // rather than kept at its natural row size.
+      // 15pxのアイコンはページを横切って飛ぶ間は小さすぎて見えない —
+      // 自然な行内サイズのままにせず、出現時に拡大し（下で着弾に向けて
+      // 縮小していく）読めるようにしている。
       gsap.set(projectile, { scale: 2.2, transformOrigin: '50% 50%' })
 
       const trail = document.createElement('div')

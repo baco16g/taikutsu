@@ -29,15 +29,15 @@ export default defineConfig(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      // React Compiler readiness rules — this project does not adopt the
-      // compiler, and both rules flag this codebase's deliberate patterns
-      // (DOM refs threaded through hooks/props for direct GSAP control;
-      // a self-contained local PRNG variable inside a single useMemo call).
+      // React Compiler対応チェック用のルール——このプロジェクトはコンパイラを
+      // 導入しておらず、どちらのルールもこのコードベースの意図的な
+      // パターン（GSAPを直接制御するためにhooks/props経由で渡すDOM ref、
+      // 1つのuseMemo呼び出し内に閉じたローカルPRNG変数）を誤検知する。
       'react-hooks/refs': 'off',
       'react-hooks/immutability': 'off',
-      // Arrow-shorthand event handlers (`onClick={() => doThing()}`) are
-      // the standard React idiom; requiring braces everywhere adds noise
-      // without preventing any real mistake here.
+      // アロー省略記法のイベントハンドラ（`onClick={() => doThing()}`）は
+      // 標準的なReactのイディオムであり、全箇所で波括弧を必須にしても
+      // ここでは実際のミスを防げずノイズが増えるだけ。
       '@typescript-eslint/no-confusing-void-expression': 'off',
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
     },

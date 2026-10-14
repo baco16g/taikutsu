@@ -1,4 +1,4 @@
-/** Deterministic PRNG (mulberry32) so generated layouts are stable across reloads. */
+/** 決定的なPRNG（mulberry32）。生成されるレイアウトがリロードをまたいで安定するように。 */
 export function mulberry32(seed: number) {
   let s = seed | 0
   return () => {

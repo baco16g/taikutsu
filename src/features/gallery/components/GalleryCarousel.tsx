@@ -16,7 +16,6 @@ export interface GalleryCarouselProps {
   reducedMotion: boolean
 }
 
-/** Plays its entrance once per mount. */
 export function GalleryCarousel({
   games,
   selectedIndex,
@@ -51,10 +50,10 @@ export function GalleryCarousel({
     resolveSlideTransform(circularDelta(i, selectedIndex, count), isMobile ? SP_STEPS : PC_STEPS),
   )
 
-  // Mount-only: plays the entrance exactly once. Under StrictMode's dev
-  // double-invoke, useGSAP's own cleanup reverts the first pass's
-  // in-flight timeline before it completes, so onSettled only ever fires
-  // from whichever pass actually survives — never twice, never zero times.
+  // マウント時のみ: 登場演出をちょうど1回だけ再生する。StrictModeの
+  // 開発時二重実行下では、useGSAP自身のcleanupが1回目のパスの実行中
+  // タイムラインを完了前に巻き戻すため、onSettledは実際に生き残った
+  // 方のパスからしか発火しない——2回発火することも0回になることもない。
   useEffect(() => {
     const cardEls = cardElsRef.current.filter((el): el is HTMLDivElement => el !== null)
     anim.initCards(cardEls)
@@ -65,10 +64,10 @@ export function GalleryCarousel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Subsequent navigation. Compares against the last applied (index,
-  // isMobile) rather than a simple "first run" flag, so a StrictMode
-  // double-invoke with unchanged deps is correctly a no-op here too —
-  // the mount effect above already owns placing the cards initially.
+  // 以降のナビゲーション。単純な「初回フラグ」ではなく直前に適用した
+  // (index, isMobile)と比較することで、依存配列が変わらないStrictModeの
+  // 二重実行でもここが正しくno-opになる——カードの初期配置は上の
+  // マウントeffectが既に担っている。
   useEffect(() => {
     const prev = lastAppliedRef.current
     lastAppliedRef.current = { index: selectedIndex, mobile: isMobile }
@@ -98,7 +97,7 @@ export function GalleryCarousel({
   return (
     <div className={styles.root} ref={rootRef} onKeyDown={handleKeyDown}>
       <p className="sr-only" aria-live="polite">
-        {/* Guards selectedIndex being out of range for games. */}
+        {/* selectedIndexがgamesの範囲外になるケースのガード。 */}
         {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
         {`${selectedIndex + 1} / ${count}枚目: ${current?.name ?? ''} を表示中`}
       </p>

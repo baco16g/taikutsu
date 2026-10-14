@@ -3,15 +3,15 @@ import clsx from 'clsx'
 import styles from './WorldFrame.module.css'
 
 /**
- * The app-wide "world" chrome — App Canvas and the Broken Frame World
- * Container with its screentone/decoration. Kept as its own component
- * (rather than inlined into HomePage) because none of it — frame geometry,
- * screentone — is actually about the intro, battle, or gallery content it
- * wraps. What's NOT here: where content goes inside the World Container —
- * that's entirely the caller's own CSS via `children` and `className`,
- * since the intro, battle, and gallery phases each anchor their content
- * differently (a 2-column intro grid vs. タ・イクツ+command's absolute
- * anchors vs. a centered gallery).
+ * アプリ全体の「世界」の枠組み——App Canvasと、スクリーントーン/装飾を
+ * 伴うBroken Frame World Container。HomePageへ直接埋め込まずに独立した
+ * コンポーネントにしているのは、枠のジオメトリやスクリーントーンの
+ * どれも、実際には包んでいるintro/battle/galleryのコンテンツ自体とは
+ * 無関係だから。ここに「ない」もの: World Container内でコンテンツを
+ * どう配置するか——それは`children`と`className`を通して完全に
+ * 呼び出し側のCSSの責任になっている。intro/battle/galleryの各フェーズは
+ * それぞれ異なる形でコンテンツをアンカーするため（introの2カラムグリッド、
+ * タ・イクツ+コマンドの絶対配置アンカー、中央寄せのギャラリー）。
  */
 function WorldDecoration({ thin }: { thin: boolean }) {
   return (
@@ -34,19 +34,19 @@ function WorldDecoration({ thin }: { thin: boolean }) {
 }
 
 export interface WorldFrameProps {
-  /** Bottom-left small tagline inside the frame — e.g. the intro screen's
-      required "© OpenStreetMap contributors" credit for its background
-      image (ODbL requires this stay visible whenever that derived imagery
-      shows; see HomePage.module.css's comment on the intro background
-      layer for the rest of that story). */
+  /** 枠内左下の小さなタグライン——例: intro画面の背景画像に必要な
+      「© OpenStreetMap contributors」のクレジット表示（ODbLの要求で、
+      この派生画像を表示している間は常に見える状態を保つ必要がある。
+      残りの経緯はHomePage.module.cssのintro背景レイヤーに関する
+      コメント参照）。 */
   note?: ReactNode
-  /** Rendered outside <main>, fixed to the viewport — e.g. the sound toggle. */
+  /** <main>の外側、ビューポートに固定して描画される——例: サウンドトグル。 */
   cornerExtra?: ReactNode
-  /** Thins out the shared frame decoration (hides the horizon line and echo slash, shrinks the main slash, lowers the screentone opacity) for a screen whose own content should be the loudest thing visible. Default 'normal'. */
+  /** 自分自身のコンテンツこそが最も目立つべき画面向けに、共通の枠装飾を控えめにする（horizonラインとechoのslashを隠し、mainのslashを縮小し、スクリーントーンの不透明度を下げる）。デフォルトは'normal'。 */
   decorationStrength?: 'normal' | 'thin'
-  /** Extra class on the World Container itself, for a screen's own content-positioning CSS to hook into (e.g. a specific max-width or padding for a centered layout vs. an absolutely-positioned one). */
+  /** World Container自体に付与する追加クラス。画面ごとのコンテンツ配置CSSが使うフック用（例: 中央寄せレイアウトか絶対配置レイアウトかで異なる最大幅・paddingを指定する等）。 */
   className?: string
-  /** Ref to the World Container itself — e.g. for a screen that needs to measure its own position/size (the battle→gallery reveal transition reads this to anchor its cover layer to the frame's current top edge). */
+  /** World Container自体へのref——例えば自身の位置/サイズを計測する必要がある画面向け（battle→galleryのreveal遷移はこれを読み、覆い隠すレイヤーを枠の現在の上端にアンカーする）。 */
   worldContainerRef?: Ref<HTMLDivElement>
   children: ReactNode
 }
@@ -63,10 +63,10 @@ export function WorldFrame({
     <div className={styles.page}>
       {cornerExtra}
 
-      {/* data-scroll-root, not a class: RevealTransition looks up this
-          element from a different component tree to lock scrolling during
-          the battle→gallery transition — a structural hook, independent of
-          whatever this element's own (CSS-Modules-hashed) class is. */}
+      {/* クラスではなくdata-scroll-root: RevealTransitionは別の
+          コンポーネントツリーからこの要素を探し、battle→gallery遷移中に
+          スクロールをロックする——この要素自身の（CSS Modulesで
+          ハッシュ化された）クラスとは独立した構造的なフック。 */}
       <main className={styles.outer} data-scroll-root>
         <div ref={worldContainerRef} className={clsx(styles.worldContainer, className)}>
           <WorldDecoration thin={decorationStrength === 'thin'} />

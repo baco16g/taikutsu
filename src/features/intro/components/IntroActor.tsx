@@ -9,29 +9,29 @@ import { ArrivalDust } from './ArrivalDust'
 import styles from './IntroActor.module.css'
 
 export interface IntroActorProps {
-  /** The single position/size wrapper — useIntroPhase sets its transform/width every frame; also doubles as CommandMenu's `targetRef` once battle begins. */
+  /** 唯一の位置/サイズ用ラッパー——useIntroPhaseが毎フレームtransform/widthを設定する。戦闘開始後はCommandMenuの`targetRef`も兼ねる。 */
   wrapperRef: Ref<HTMLDivElement>
-  /** Group of reveal-mask circles — useIntroPhase grows these (GSAP, r: 0 → MAX_SEED_RADIUS) during formation. Left at full radius (mask removed below) for the rest of the creature's life. */
+  /** revealマスクの円のグループ——useIntroPhaseがformation中にこれらを成長させる（GSAP、r: 0 → MAX_SEED_RADIUS）。formation完了後は最大半径のまま残る（マスク自体は下で無効化）。 */
   maskCirclesRef: Ref<SVGGElement>
   creatureRef: Ref<TaikutsuCreatureHandle>
   reducedMotion: boolean
   onHpChange: (hp: Hp) => void
-  /** Whether the reveal mask should still be applied at all — removed once formation completes, so there's zero ongoing mask-compositing cost for the rest of the session. */
+  /** revealマスクをまだ適用すべきかどうか——formation完了後は外され、以降セッションが続く間マスク合成のコストが一切かからなくなる。 */
   maskActive: boolean
-  /** Mount the dust canvas only while arrival is actually playing. */
+  /** arrivalが実際に再生中の間だけdust用canvasをマウントする。 */
   showDust: boolean
   dustProgressRef: RefObject<number>
 }
 
 /**
- * タ・イクツ's single persistent instance, shared across the intro and
- * battle phases (see useIntroPhase) — mounted once, never remounted. Two
- * independent layers around the body:
- * - an outer position/size wrapper (plain transform/width, set externally)
- * - an inner reveal layer (CSS mask referencing the SVG mask below)
- * Neither ever touches TaikutsuCreature's own internal transforms
- * (breathing/float/squash all stay inside its own <g> elements), so there's
- * no transform collision between "where it is" and "how it's breathing".
+ * タ・イクツの唯一の永続インスタンス、intro/battle両フェーズで共有される
+ * （useIntroPhase参照）——一度マウントされたら再マウントされることはない。
+ * 本体を囲む独立した2層構造:
+ * - 外側の位置/サイズ用ラッパー（素のtransform/width、外部から設定される）
+ * - 内側のrevealレイヤー（下のSVGマスクを参照するCSS mask）
+ * どちらもTaikutsuCreature自身の内部transform（呼吸/float/squashは全て
+ * 自身の<g>要素内に留まる）には一切触れないため、「どこにいるか」と
+ * 「どう呼吸しているか」の間でtransformが衝突することはない。
  */
 export function IntroActor({
   wrapperRef,
@@ -66,15 +66,16 @@ export function IntroActor({
           onHpChange={onHpChange}
         />
       </div>
-      {/* Mask lives in its own near-zero-size SVG, not inside TaikutsuCreature's
-          own <svg> — the body's own markup/mask (collapseMaskId, defeat-only)
-          stays untouched by this outer reveal mask. */}
+      {/* マスクはTaikutsuCreature自身の<svg>の中ではなく、ほぼサイズ0の
+          専用SVGに存在する——本体自身のマークアップ/マスク（collapseMaskId、
+          撃破時専用）はこの外側のrevealマスクから一切影響を受けない。 */}
       <svg className={styles.maskDefs} aria-hidden="true">
         <defs>
-          {/* Softens the seed circles' hard edges into a grainy, coalescing
-              feel instead of a stamped-coin look — primitiveUnits matches
-              the mask's own objectBoundingBox so stdDeviation stays a tiny
-              fraction of the box regardless of its actual rendered size. */}
+          {/* シード円の硬い輪郭を和らげ、スタンプで押したようなコインの
+              見た目ではなく粒状で集まってくる質感にする——
+              primitiveUnitsはマスク自身のobjectBoundingBoxに合わせて
+              あるので、実際のレンダリングサイズに関わらずstdDeviationは
+              ボックスに対する小さな割合のままになる。 */}
           <filter
             id={blurId}
             primitiveUnits="objectBoundingBox"

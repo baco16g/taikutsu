@@ -1,5 +1,5 @@
-/* Behind IntroActor's own reveal layer — dust reads as "flying into" the
-   forming body, not sitting on top of it. */
+/* IntroActor自身のrevealレイヤーより背後——これによりdustは形成中の
+   本体の上に乗っているのではなく「そこへ向かって飛んでいく」ように読める。 */
 .dust {
   position: absolute;
   z-index: 1;

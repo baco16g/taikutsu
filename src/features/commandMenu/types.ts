@@ -7,28 +7,28 @@ export interface MoveEntry {
   icon: Icon
 }
 
-/** Payload shared by every outward-facing command-menu event. */
+/** 外部向けのコマンドメニューイベント全てが共有するペイロード。 */
 export interface CommandMoveEvent {
   moveId: string
   moveName: string
-  /** Position (0-5) within the currently displayed six commands. */
+  /** 現在表示されている6つのコマンド内での位置（0〜5）。 */
   slotIndex: number
-  /** 1-based count of attacks landed so far this session, including this one. */
+  /** このセッションでこれまでに着弾した攻撃数（1始まり、今回分を含む）。 */
   attackNumber: number
 }
 
 export interface CommandMenuEvents {
-  /** Fired while the cursor rests on a command, via hover or keyboard focus. Null when nothing is previewed. */
+  /** ホバーまたはキーボードフォーカスでカーソルがコマンド上に静止している間発火する。何もプレビューされていない時はnull。 */
   onPreviewMove?: (event: CommandMoveEvent | null) => void
-  /** Fired the instant a command is confirmed, before the attack animation plays. */
+  /** コマンドが確定した瞬間、攻撃アニメーションが再生される前に発火する。 */
   onAttackStart?: (event: CommandMoveEvent) => void
-  /** Fired when the flying command graphic reaches the target, for hit-reaction integration. */
+  /** 飛んでいくコマンドのグラフィックがターゲットに到達した時に発火する。ヒットリアクションとの連携用。 */
   onImpact?: (event: CommandMoveEvent) => void
-  /** Fired once the full attack timeline (including the next command list reveal) has settled. */
+  /** 攻撃タイムライン全体（次のコマンド一覧のrevealも含む）が落ち着いた時点で一度発火する。 */
   onAttackComplete?: (event: CommandMoveEvent) => void
-  /** Fired once the 5th attack's timeline completes and the session ends —
-   * the host page's cue to move on (spec: eventually navigates to the game
-   * gallery; CommandMenu no longer renders a session-complete screen of its
-   * own). */
+  /** 5回目の攻撃のタイムラインが完了しセッションが終わった時点で発火する
+   * ——呼び出し元ページへの「次へ進んでよい」という合図（仕様上は最終的に
+   * ゲームギャラリーへ遷移する。CommandMenuはもうセッション完了画面を
+   * 自前で描画しない）。 */
   onSessionComplete?: () => void
 }

@@ -8,22 +8,21 @@ gsap.registerPlugin(Draggable)
 export interface UseGalleryDragOptions {
   disabled: boolean
   reducedMotion: boolean
-  /** Pixels the track must move before release counts as a page, not a tap. */
+  /** リリースを「タップ」ではなく「ページ送り」とみなすために必要な、トラックの最低移動量（px）。 */
   thresholdPx: number
   onCommit: (direction: -1 | 0 | 1) => void
 }
 
 /**
- * Binds GSAP Draggable straight to the card track: dragging the track IS
- * the carousel move, so no manual offset bookkeeping is needed —
- * Draggable already sets the track's x live as the pointer moves. This
- * hook only decides, on release, whether the drag crossed the page
- * threshold and settles the track back to 0 either way.
+ * GSAP Draggableをカードトラックへ直接バインドする: トラックをドラッグ
+ * すること自体がカルーセルの移動なので、手動のオフセット管理は不要——
+ * Draggableがポインタの動きに合わせてトラックのxをライブに設定して
+ * くれる。このhookが決めているのは、リリース時にドラッグがページ送りの
+ * しきい値を超えたかどうかと、どちらの場合もトラックを0へ戻すことだけ。
  *
- * Returns a ref that reads true for a short window right after a real
- * drag (beyond a few px), so the card click handlers can tell a
- * drag-release apart from a genuine tap and skip opening the game's
- * sales page link by accident.
+ * 実際のドラッグ（数px以上）の直後だけ短い間trueを返すrefを返す。これに
+ * より、カードのクリックハンドラがドラッグのリリースと本物のタップを
+ * 区別でき、誤って販売ページのリンクを開いてしまうことを防げる。
  */
 export function useGalleryDrag(
   trackRef: RefObject<HTMLElement | null>,
@@ -53,8 +52,8 @@ export function useGalleryDrag(
       onDrag(this: Draggable) {
         maxDistance = Math.max(maxDistance, Math.abs(this.x))
       },
-      // Fires on every release, drag or not — unlike onDragEnd (drags
-      // only), so a plain click always clears the grabbing cursor too.
+      // ドラッグかどうかに関わらずリリースのたびに発火する——drag時のみの
+      // onDragEndとは違い、これにより単なるクリックでもgrabbingカーソルが必ず解除される。
       onRelease() {
         el.classList.remove(styles.isDragging)
       },

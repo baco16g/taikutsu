@@ -3,10 +3,10 @@ import { useMatchMedia } from './useMatchMedia'
 const QUERY = '(hover: hover) and (pointer: fine)'
 
 /**
- * True on devices with a real mouse/trackpad (genuine hover), false on
- * touch-only devices — a capability check, not a viewport-width guess
- * (a desktop browser resized narrow still has hover; a tablet at a wide
- * width still doesn't).
+ * 実際のマウス/トラックパッド（本物のホバー）を持つ端末ではtrue、
+ * タッチのみの端末ではfalse——ビューポート幅からの推測ではなく機能判定
+ * （デスクトップブラウザを狭くリサイズしてもホバーは依然ある。幅の
+ * 広いタブレットでも依然ない）。
  */
 export function useSupportsHover(): boolean {
   return useMatchMedia(QUERY)

@@ -3,15 +3,16 @@ import gsap from 'gsap'
 import styles from './RevealTransition.module.css'
 
 /**
- * Three diagonal sheets that sweep bottom-right → top-left to fully cover
- * the battle screen — including the frame's own header chrome — then the
- * same three sweep back out to reveal the gallery underneath.
+ * 右下→左上へ斜めに掃く3枚のシートで戦闘画面全体（フレーム自身の
+ * ヘッダー周りも含む）を覆い尽くし、同じ3枚が逆向きに掃いて下の
+ * ギャラリーを現す。
  *
- * This component owns only the cover layer itself. The caller (HomePage)
- * owns *what's underneath*: it must synchronously swap battle content for
- * gallery content inside `onCovered` (ideally via `flushSync`, since this
- * component starts the uncover animation shortly after `onCovered` returns
- * and has no other way to know React has actually committed the swap).
+ * このコンポーネントが持つのは覆い隠すレイヤーそのものだけ。「その下に
+ * 何があるか」は呼び出し側（HomePage）の責任: `onCovered`の中で
+ * 戦闘コンテンツからギャラリーコンテンツへ同期的に差し替える必要がある
+ * （理想的には`flushSync`経由で——このコンポーネントは`onCovered`が
+ * 戻った直後に非表示化アニメーションを開始するため、Reactが実際に
+ * 差し替えをcommitしたかを知る他の手段がない）。
  */
 
 const CLOSED = 'polygon(0 200%, 100% 100%, 100% 100%, 0 100%)'
@@ -23,16 +24,16 @@ const COVER_MS = 440
 const UNCOVER_MS = 440
 const STAGGER_MS = 65
 const REDUCED_FADE_MS = 100
-/** Settle time after the covered content-swap before the uncover animation starts — lets React's swap (and any resulting reflow, invisible behind the sheets) finish painting first. */
+/** 覆い隠した状態でのコンテンツ差し替え後、非表示化アニメーションを始めるまでの落ち着き時間 — Reactの差し替え（とそれに伴うreflow、シートの裏で見えない）を先に描画させ切る。 */
 const SWAP_SETTLE_MS = 50
 const EASE = 'cubic-bezier(.65,0,.35,1)'
 
 export interface RevealTransitionProps {
   reducedMotion: boolean
   worldContainerRef: RefObject<HTMLDivElement | null>
-  /** Fully covered — swap battle content for gallery content now (synchronously; see class comment). */
+  /** 完全に覆い終わった — 今すぐ（同期的に。上のコンポーネントdocコメント参照）戦闘コンテンツをギャラリーコンテンツへ差し替える。 */
   onCovered: () => void
-  /** Fully uncovered — gallery is live, safe to focus/enable it. */
+  /** 完全に覆いが外れた — ギャラリーが表示されているので、フォーカス/有効化してよい。 */
   onComplete: () => void
 }
 
@@ -67,16 +68,16 @@ export function RevealTransition({
     const outer = worldEl.closest<HTMLElement>('[data-scroll-root]')
     outerElRef.current = outer
 
-    // Step 1: cover sheets always reach the viewport's own top — the whole
-    // frame, including its header chrome, goes under the sheets before the
-    // gallery swap.
+    // Step 1: cover用のシートは常にビューポート自身の最上部まで届く —
+    // ヘッダー周りを含むフレーム全体が、ギャラリーへの差し替え前に
+    // シートの下へ入る。
     wrap.style.top = '0px'
 
-    // Step 2: stop input, insert the layer. The sheets themselves
-    // (pointer-events: auto, opaque, full-bleed) are the input block —
-    // nothing interactive survives behind them once covered, and there's
-    // nothing left to click in the battle content at this point anyway
-    // (CommandMenu already hid its move list at the 5th hit).
+    // Step 2: 入力を止め、レイヤーを挿入する。シート自身
+    // （pointer-events: auto、不透明、全面）が入力ブロックの実体 —
+    // 覆われた後は背後に何も操作可能なものが残らず、この時点で
+    // 戦闘コンテンツ側にもクリックできるものはそもそも残っていない
+    // （CommandMenuは5回目のヒットで既に技一覧を隠している）。
     const prevOuterOverflow = outer?.style.overflow ?? ''
     const prevHtmlOverflow = document.documentElement.style.overflow
     if (outer) outer.style.overflow = 'hidden'
@@ -90,7 +91,8 @@ export function RevealTransition({
     const callCovered = () => {
       if (coveredCalledRef.current) return
       coveredCalledRef.current = true
-      // Step 4: swap content while hidden, then land the gallery at its own top.
+      // Step 4: 隠れている間にコンテンツを差し替え、ギャラリーを
+      // その自身の最上部へ着地させる。
       onCovered()
       if (outer) outer.scrollTop = 0
     }
@@ -103,19 +105,19 @@ export function RevealTransition({
 
     let abandoned = false
 
-    // Resize/rotation/backgrounding mid-transition: the battle result is
-    // already final (5th hit landed, defeat already played) — never revert
-    // to the battle view. Kill whatever's in flight and jump straight to
-    // the finished gallery state instead.
+    // 遷移途中でのリサイズ/画面回転/バックグラウンド化: 戦闘結果は
+    // 既に確定している（5回目のヒットが着弾し、撃破演出も再生済み）ので
+    // 戦闘画面へ戻すことは絶対にしない。進行中のものを止め、完了済みの
+    // ギャラリー状態へ直接ジャンプする。
     const fastForward = () => {
       if (abandoned) return
       abandoned = true
       gsap.killTweensOf([...sheets, wrap])
       callCovered()
-      // Covers both branches' own way of hiding the sheets: clip-path for
-      // the normal sweep, the wrapper's opacity for the reduced-motion
-      // fade — whichever this run actually used, the sheets must end up
-      // fully invisible here, not frozen mid-tween.
+      // どちらの分岐の非表示方法もカバーする: 通常の掃引ならclip-path、
+      // reduced-motionのフェードならラッパーのopacity——今回の実行が
+      // 実際にどちらを使っていたとしても、ここでシートはtween途中で
+      // 凍結されるのではなく完全に不可視になっていなければならない。
       gsap.set(sheets, { clipPath: EXITED, opacity: 0 })
       gsap.set(wrap, { opacity: 0 })
       callComplete()
@@ -129,15 +131,16 @@ export function RevealTransition({
 
     const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-    // `abandoned` is set by fastForward(), called from event listeners while
-    // this function is suspended at an `await` — real mutation TS's
-    // control-flow analysis can't see, so it reports every `if (abandoned)`
-    // check below as unreachable even though it's the actual abort guard.
+    // `abandoned`はfastForward()によってセットされ、これはこの関数が
+    // `await`で中断している間にイベントリスナーから呼ばれる——TSの
+    // 制御フロー解析には見えない実際のミューテーションなので、下の
+    // `if (abandoned)`は実際には中断ガードとして機能しているにも
+    // かかわらず、全て到達不能と報告されてしまう。
     /* eslint-disable @typescript-eslint/no-unnecessary-condition */
     async function run() {
       if (reducedMotion) {
-        // prefers-reduced-motion: no diagonal sweep, just a short fade —
-        // the defeat-complete wording stays, only the big movement goes.
+        // prefers-reduced-motion: 斜めの掃引はせず、短いフェードのみ —
+        // 「撃破完了」の文言はそのまま、大きな動きだけを取り除く。
         gsap.set(sheets, { clipPath: FILLED, opacity: 1 })
         gsap.set(wrap, { opacity: 0 })
         await tweenTo(wrap, { opacity: 1, duration: REDUCED_FADE_MS / 1000 })
@@ -151,7 +154,7 @@ export function RevealTransition({
         return
       }
 
-      // Step 2 (cont'd): cover-in, back sheet leading, front sheet trailing.
+      // Step 2（続き）: cover-in、奥のシートが先行し手前のシートが追従する。
       gsap.set(sheets, { clipPath: CLOSED })
       await Promise.all(
         sheets.map((sheet, i) =>
@@ -165,17 +168,17 @@ export function RevealTransition({
       )
       if (abandoned) return
 
-      // Step 3: fully covered — confirmed by the cover animation's own
-      // completion, not guessed from a timer.
+      // Step 3: 完全に覆われた — タイマーからの推測ではなく、
+      // cover用アニメーション自身の完了で確定させる。
       callCovered()
 
       await wait(SWAP_SETTLE_MS)
       if (abandoned) return
 
-      // Step 5/6: uncover, front sheet leading this time (reversed stagger
-      // order from the cover-in above). gsap.set to FULL_EXIT first — same
-      // "fully covering" look as FILLED, just re-parameterized so the tween
-      // to EXITED continues the same diagonal motion instead of reversing it.
+      // Step 5/6: uncover、今度は手前のシートが先行する（上のcover-inとは
+      // 逆順のstagger）。まずgsap.setでFULL_EXITへ——FILLEDと同じ
+      // 「完全に覆われた」見た目だが、EXITEDへのtweenが逆再生ではなく
+      // 同じ斜め方向の動きを継続するようパラメータだけ再定義している。
       gsap.set(sheets, { clipPath: FULL_EXIT })
       await Promise.all(
         sheets.map((sheet, i) =>
@@ -201,8 +204,8 @@ export function RevealTransition({
       gsap.killTweensOf([...sheets, wrap])
       restoreScroll()
     }
-    // Runs exactly once per mount — this component is only ever mounted
-    // for the duration of a single transition (see HomePage).
+    // マウントごとに正確に1回だけ走る — このコンポーネントは1回の遷移の
+    // 間だけマウントされる（HomePage参照）。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

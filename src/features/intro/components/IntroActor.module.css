@@ -1,6 +1,6 @@
-/* Position/size are set imperatively (useIntroPhase writes transform/width
-   directly, GSAP-driven during the intro→battle travel) — this file only
-   establishes the stacking/layout contract, never a concrete position. */
+/* 位置/サイズは命令的に設定される（useIntroPhaseがtransform/widthを
+   直接書き込み、intro→battleの移動中はGSAPが駆動する）——このファイルは
+   重なり順/レイアウトの契約を定めるだけで、具体的な位置は一切指定しない。 */
 .root {
   position: absolute;
   left: 0;
@@ -17,8 +17,7 @@
   height: 100%;
 }
 
-/* The mask's own <svg> carries no visible geometry of its own — it only
-   hosts the <mask> definition the reveal layer references by id. */
+/* マスク自身の<svg>は自前の可視ジオメトリを一切持たない——revealレイヤーがidで参照する<mask>定義を保持しているだけ。 */
 .maskDefs {
   position: absolute;
   width: 0;

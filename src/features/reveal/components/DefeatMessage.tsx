@@ -5,12 +5,12 @@ export interface DefeatMessageProps {
   reducedMotion: boolean
 }
 
-/** Settled fragment positions, loosely tracing where タ・イクツ broke apart
- * (left/lower area of the World Container, roughly where BattleStatus
- * sits) — reuses HitParticles' shard shape language (solid
- * square/triangle/diamond) but as a fixed decorative scatter, not a
- * continuation of that live burst: by the time this screen is readable,
- * the real particle animation has already fully decayed. */
+/** 落ち着いた破片の位置、タ・イクツが崩れた場所をおおよそなぞっている
+ * （World Containerの左下あたり、だいたいBattleStatusがある位置）——
+ * HitParticlesの破片の形状言語（塗りの正方形/三角形/ひし形）を再利用
+ * しているが、こちらはあのライブなバーストの続きではなく固定の演出用
+ * 散布: この画面が読める頃には、本物のパーティクルアニメーションは
+ * 既に完全に減衰している。 */
 interface Shard {
   left: number
   top: number
@@ -69,10 +69,10 @@ function DebrisField() {
 }
 
 /**
- * The beat between タ・イクツ's defeat and the gallery reveal starting —
- * purely the debris scatter, no heading. The gallery screen owns the
- * "defeated/next game" copy on its own (larger) heading a moment later;
- * repeating it here would read the same sentence twice.
+ * タ・イクツの撃破とギャラリーのreveal開始の間の「間（ま）」——見出しは
+ * なく純粋に破片の散布のみ。「撃破した/次のゲーム」という文言は、
+ * 少し後にギャラリー画面自身の（より大きな）見出しが担う。ここで
+ * 繰り返すと同じ文を2回読ませることになる。
  */
 export function DefeatMessage({ reducedMotion }: DefeatMessageProps) {
   return (

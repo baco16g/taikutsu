@@ -1,5 +1,5 @@
 :root {
-  /* Paper/ink — the app's fixed light, print-like palette (no dark-mode variant). */
+  /* Paper/ink——このアプリ固定の、印刷物のような明るいパレット（ダークモードのバリアントはない）。 */
   --color-ink: #141414;
   --color-paper: #f3f1ea;
   --color-page-background: #efece4;

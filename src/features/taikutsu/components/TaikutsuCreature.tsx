@@ -18,7 +18,7 @@ export interface TaikutsuCreatureHandle {
 export interface TaikutsuCreatureProps {
   idleEnabled: boolean
   reducedMotion: boolean
-  /** A fixed pixel number, or any CSS width (e.g. "100%") to fill a responsively-sized parent — height always follows via aspect-ratio, since the body is always square. */
+  /** 固定のピクセル数、またはレスポンシブな親要素いっぱいに広がる任意のCSS幅（例: "100%"）——本体は常に正方形なので、高さは常にaspect-ratio経由で追従する。 */
   size?: number | string
   onHpChange?: (hp: Hp) => void
   ref?: React.Ref<TaikutsuCreatureHandle>
@@ -99,9 +99,9 @@ export function TaikutsuCreature({
           <clipPath id={clipId}>
             <path ref={anim.clipPathRef} d={initialPathD} />
           </clipPath>
-          {/* Always present (not just at HP0) so the final-blow timeline can
-              animate it straight away. At rest every circle has r=0, so it
-              has no visual effect until an attack drives it. */}
+          {/* HP0の時だけでなく常に存在させておくことで、最後の一撃の
+              タイムラインがすぐにこれをアニメーションできるようにしている。
+              静止時は全ての円がr=0なので、攻撃が動かすまでは視覚的な影響は一切ない。 */}
           <mask
             id={collapseMaskId}
             maskUnits="userSpaceOnUse"

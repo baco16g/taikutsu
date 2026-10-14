@@ -1,11 +1,12 @@
-/* No background panel — タ・イクツ's own label (BattleStatus's isDefeated
-   state) and the command panel (HomePage.module.css's .commandAnchor
-   .isDefeated) fade out on this exact same `defeated` flip, so this
-   crossfades in at screen center as those crossfade out, instead of
-   cutting to a separate opaque "screen". (RevealTransition's own sheets,
-   started separately after DEFEAT_MESSAGE_HOLD_MS, still do the actual
-   full cover on the way to the gallery.) Purely decorative (just the
-   debris field below — no text), hence pointer-events:none. */
+/* 背景パネルはない——タ・イクツ自身のラベル（BattleStatusのisDefeated
+   状態）とコマンドパネル（HomePage.module.cssの.commandAnchor
+   .isDefeated）は、このまさに同じ`defeated`の切り替わりでフェード
+   アウトする。そのためこちらは画面中央でそれらがフェードアウトするのに
+   合わせてクロスフェードで現れ、別の不透明な「画面」へ切り替わる
+   ことはない（実際にギャラリーへ向けて全面を覆うのは、
+   DEFEAT_MESSAGE_HOLD_MS後に別途始まるRevealTransition自身のsheets）。
+   純粋に演出用（下の破片フィールドのみ、テキストはない）なので
+   pointer-events:none。 */
 .root {
   position: absolute;
   inset: 0;
@@ -27,10 +28,10 @@
   }
 }
 
-/* Settled シャード scatter — see DefeatMessage.tsx's SHARDS comment. Biased
-   toward where タ・イクツ sat during battle, not centered in the frame —
-   it's debris from where the creature broke apart, not a decoration
-   arranged around centered text. */
+/* 落ち着いたシャードの散布——DefeatMessage.tsxのSHARDSコメント参照。
+   枠の中央ではなく、戦闘中タ・イクツがいた場所に偏らせている——これは
+   中央寄せのテキストの周りに配置した装飾ではなく、クリーチャーが
+   崩れた場所から出た破片だから。 */
 .debris {
   position: absolute;
   inset: 0;

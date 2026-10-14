@@ -1,19 +1,19 @@
-/** One ring of the carousel, keyed by distance from the center (0 = center). */
+/** カルーセルの輪1段分。中心からの距離でキーされる（0 = 中心）。 */
 export interface SlideStep {
   x: number
   z: number
   rotateY: number
   scale: number
   opacity: number
-  /** False once a card is far enough back that it shouldn't be reachable or announced. */
+  /** カードが十分奥にあり、到達可能にも読み上げ対象にもすべきでなくなった時点でfalse。 */
   reachable: boolean
 }
 
 /**
- * PC depth: index 0 is the selected card, 1/2 are the visible neighbors,
- * 3 is the far side of the loop (the 6th card), parked behind center at
- * opacity 0 so its presence doesn't register as a 7th visible slot — a
- * felt third dimension, not an aggressive one.
+ * PC用の奥行き: index 0が選択中のカード、1/2が見えている隣接カード、
+ * 3はループの反対側（6枚目のカード）で、opacity 0で中心の裏に待機させ
+ * 7枚目の見える枠としては認識されないようにしている——強すぎない、
+ * 感じ取れる程度の3D感。
  */
 export const PC_STEPS: readonly SlideStep[] = [
   { x: 0, z: 0, rotateY: 0, scale: 1, opacity: 1, reachable: true },
@@ -22,7 +22,7 @@ export const PC_STEPS: readonly SlideStep[] = [
   { x: 560, z: -480, rotateY: 40, scale: 0.4, opacity: 0, reachable: false },
 ]
 
-/** SP depth: same idea, flatter — the 3D effect is deliberately weaker on mobile. */
+/** SP用の奥行き: 考え方は同じだが、より平たい——3D感はモバイルでは意図的に弱めてある。 */
 export const SP_STEPS: readonly SlideStep[] = [
   { x: 0, z: 0, rotateY: 0, scale: 1, opacity: 1, reachable: true },
   { x: 118, z: -70, rotateY: 10, scale: 0.68, opacity: 0.55, reachable: true },
@@ -40,7 +40,7 @@ export interface ResolvedSlideTransform {
   reachable: boolean
 }
 
-/** Signed shortest distance from `selected` to `index` around a loop of `count` items. */
+/** `count`個でループする並びの中で、`selected`から`index`までの符号付き最短距離。 */
 export function circularDelta(index: number, selected: number, count: number): number {
   const raw = (((index - selected) % count) + count) % count
   return raw > count / 2 ? raw - count : raw

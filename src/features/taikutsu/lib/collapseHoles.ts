@@ -8,14 +8,14 @@ export interface CollapseHole {
 }
 
 const HOLE_COUNT = 30
-const MAX_DIST = 108 // comfortably covers HP1's largest radius (~94) plus margin
+const MAX_DIST = 108 // HP1の最大半径（約94）に余裕を持って収まる値
 
 /**
- * Scattered circles covering the whole body, used as a growing SVG mask at
- * the final blow: instead of the body shrinking toward a point (which reads
- * as "retreating into the distance"), these pop open across the silhouette
- * so the mass visibly crumbles into the particle burst instead.
- * Uniform-disk sampling (r = MAX_DIST * sqrt(rand())) avoids center bias.
+ * 本体全体を覆う散布円。最後の一撃で成長するSVGマスクとして使う:
+ * 本体が1点に向かって縮む（「遠ざかっていく」ように見える）代わりに、
+ * これらがシルエット全体にわたって開いていき、塊が目に見える形で
+ * パーティクルバーストへ崩れていくように見せる。
+ * 一様円盤サンプリング（r = MAX_DIST * sqrt(rand())）で中心への偏りを避けている。
  */
 export const COLLAPSE_HOLES: CollapseHole[] = (() => {
   const rand = mulberry32(777)

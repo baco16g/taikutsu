@@ -34,7 +34,7 @@ describe('useCommandMenuController', () => {
     expect(result.current.attackCount).toBe(1)
     const secondSix = result.current.currentMoves.map((m) => m.id)
     expect(secondSix).toHaveLength(VISIBLE_COUNT)
-    // The just-used move never reappears.
+    // 使用済みの技は二度と現れない。
     expect(secondSix.includes(firstSix[0])).toBe(false)
   })
 
@@ -52,7 +52,7 @@ describe('useCommandMenuController', () => {
 
     expect(result.current.status).toBe('complete')
     expect(result.current.attackCount).toBe(ATTACK_LIMIT)
-    // No next six to draw — the final hand stays on screen as-is.
+    // 次の6つを引く余地がない——最後の手札がそのまま画面に残る。
     expect(result.current.currentMoves).toBe(lastSix)
   })
 

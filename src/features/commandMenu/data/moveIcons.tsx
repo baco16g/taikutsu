@@ -29,7 +29,7 @@ import {
   PlantIcon,
 } from '@phosphor-icons/react'
 
-/** Semantic icon per move id (see `data/specialMoves.json` for each move's playExperience). */
+/** 技idごとの意味に沿ったアイコン（各技のplayExperienceは`data/specialMoves.json`参照）。 */
 export const MOVE_ICONS: Record<string, Icon> = {
   C01: GhostIcon, // シャドウステップ: 気配を消す
   C03: SkullIcon, // ナイトメアサバイブ: 恐怖から生き延びる

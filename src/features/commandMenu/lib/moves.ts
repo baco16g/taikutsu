@@ -2,17 +2,17 @@ import specialMovesData from '../../../../data/specialMoves.json'
 import { MOVE_ICONS } from '../data/moveIcons'
 import type { MoveEntry } from '../types'
 
-/** A move's raw shape in data/specialMoves.json, before an icon is attached. */
+/** data/specialMoves.jsonにおける技の生の形——アイコンが付与される前。 */
 export interface RawMove {
   id: string
   name: string
   shortDescription: string
 }
 
-/** The 27 shipped moves (data/specialMoves.json), with an icon attached. */
+/** 配信されている27個の技（data/specialMoves.json）にアイコンを付与したもの。 */
 export const ALL_MOVES: MoveEntry[] = (specialMovesData.moves as RawMove[]).map((move) => {
   const icon = MOVE_ICONS[move.id]
-  // Record's index signature hides the real possibility of a missing key.
+  // Recordのインデックスシグネチャはキーが実際には欠けている可能性を隠してしまう。
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!icon) throw new Error(`No icon mapped for move ${move.id}`)
   return { id: move.id, name: move.name, shortDescription: move.shortDescription, icon }
@@ -31,10 +31,10 @@ function shuffled<T>(items: T[]): T[] {
 }
 
 /**
- * Draws the next `count` moves from `pool`, preferring ids in `unseenIds`
- * (moves never shown before) and falling back to previously-seen-but-unused
- * ones once the unseen supply runs out. `exclude` keeps the currently
- * displayed six out of a "show me something else" reroll.
+ * `pool`から次の`count`個の技を引く。`unseenIds`に含まれるid（これまで
+ * 一度も表示されていない技）を優先し、未表示分が尽きたら既に見たが
+ * 未使用の技にフォールバックする。`exclude`は「ほかの技を見る」のreroll
+ * から現在表示中の6つを除外するために使う。
  */
 export function drawMoves(
   pool: MoveEntry[],

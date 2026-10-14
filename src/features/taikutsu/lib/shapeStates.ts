@@ -6,9 +6,9 @@ export const VIEW_SIZE = 240
 export const CENTER = VIEW_SIZE / 2
 
 /**
- * Fixed angles shared by every HP state (and the idle breathing pass).
- * Only radius changes between states, so morphing is a simple per-index
- * lerp that can never twist or self-intersect.
+ * 全てのHP状態（とアイドルの呼吸パス）で共有される固定角度。
+ * 状態間で変わるのは半径だけなので、モーフィングはインデックスごとの
+ * 単純なlerpで済み、ねじれたり自己交差したりすることが決してない。
  */
 const ANGLE_JITTER = [0, -4, 6, -3, 5, -7, 3, 4, -5, 2, -3, 6, -2, 4]
 export const POINT_COUNT = ANGLE_JITTER.length
@@ -18,29 +18,29 @@ export const BASE_ANGLES = ANGLE_JITTER.map((jitter, i) => i * ANGLE_STEP + jitt
 const shapeFrom = (radii: number[]): BlobPoint[] =>
   radii.map((radius, i) => ({ angle: BASE_ANGLES[i], radius }))
 
-// HP5: undamaged silhouette. Irregular and asymmetric, but reads as one mass.
+// HP5: 無傷のシルエット。不規則で非対称だが1つの塊として読める。
 const HP5_RADII = [104, 97, 101, 93, 99, 105, 96, 100, 90, 98, 103, 94, 100, 107]
 
-// HP4: hit 1 lands as a single small bite at index 3 (south). Neighbours
-// only soften slightly so the wound reads as a chip, not a split.
+// HP4: 1発目のヒットはインデックス3（南）への小さな一噛みとして着弾。
+// 隣接点はわずかに和らげるだけに留め、傷が「欠け」に見え「分裂」には見えないようにする。
 const HP4_RADII = [104, 97, 95, 60, 92, 105, 96, 100, 90, 98, 103, 94, 100, 107]
 
-// HP3: hit 2 opens a second bite at index 9 (west); hit 1 deepens and
-// widens into index 4, as if the first wound is tearing further.
+// HP3: 2発目のヒットでインデックス9（西）に2つ目の噛み跡が開く。
+// 1発目の傷はさらに深く・広くインデックス4へ広がり、最初の傷がさらに裂けているように見せる。
 const HP3_RADII = [107, 97, 95, 52, 78, 105, 96, 100, 82, 55, 90, 94, 100, 107]
 
-// HP2: hit 3 is the first real gouge — a two-point notch across the
-// 13/0 seam (north) — while the earlier wounds deepen further.
+// HP2: 3発目のヒットが最初の本格的な抉れ——13/0の境目（北）をまたぐ
+// 2点のノッチ——それまでの傷もさらに深まる。
 const HP2_RADII = [45, 92, 95, 46, 78, 105, 96, 100, 82, 48, 90, 94, 90, 50]
 
-// HP1: hit 4 bites index 6 (west-south-west); the whole mass also shrinks
-// and turns ragged, reading as "about to come apart" without losing
-// cohesion as a single silhouette.
+// HP1: 4発目のヒットがインデックス6（西南西）に噛みつく。塊全体も
+// 縮み荒くなり、1つのシルエットとしてのまとまりを失わないまま
+// 「今にも崩れそう」な見た目になる。
 const HP1_RADII = [41, 74, 84, 35, 69, 77, 50, 73, 73, 37, 80, 76, 80, 39]
 
-// HP0 is never drawn as a static silhouette (see TaikutsuCreature's final
-// blow sequence) but a collapsed point set is kept for completeness /
-// potential reuse as a morph target.
+// HP0は静的なシルエットとして描画されることは決してない
+// （TaikutsuCreatureの最後の一撃シーケンス参照）が、完全性のため、
+// またモーフ先として将来再利用する可能性のため、崩壊済みの点集合を保持している。
 const HP0_RADII = HP1_RADII.map((r) => r * 0.3)
 
 export const HP_SHAPES: Record<Hp, BlobPoint[]> = {
@@ -52,7 +52,7 @@ export const HP_SHAPES: Record<Hp, BlobPoint[]> = {
   0: shapeFrom(HP0_RADII),
 }
 
-/** Index whose dent most recently deepened going from `hp + 1` to `hp` — used to aim hit particles. */
+/** `hp + 1`から`hp`へ移る際に最も深くなった凹みのインデックス——ヒットパーティクルの着弾位置を狙うために使う。 */
 export const HIT_INDEX_BY_HP: Partial<Record<Hp, number>> = {
   4: 3,
   3: 9,

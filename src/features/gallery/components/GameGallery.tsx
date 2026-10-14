@@ -9,30 +9,30 @@ import styles from './GameGallery.module.css'
 export interface GameGalleryProps {
   reducedMotion: boolean
   /**
-   * The player's actual chosen moves for this session (from the
-   * battle→gallery reveal), fed into the real recommendation engine (see
-   * recommend.ts) to pick which games appear. Omit to fall back to
-   * DEFAULT_CHOSEN_MOVES instead (for any caller with no real session to
-   * pull from, e.g. manual testing).
+   * このセッションでプレイヤーが実際に選んだ技（battle→galleryのreveal
+   * から渡される）。実体のある推薦エンジン（recommend.ts参照）に渡され、
+   * 表示するゲームを決める。省略した場合はDEFAULT_CHOSEN_MOVESに
+   * フォールバックする（引ける実セッションがない呼び出し元向け、
+   * 例えば手動テストなど）。
    */
   chosenMoves?: GalleryMove[]
 }
 
 /**
- * The gallery screen itself — the shared site header and anything from
- * the battle screen are the caller's job, not this component's. Game data
- * comes from recommend.ts's recommendGames(), computed from the player's
- * actual chosen moves.
+ * ギャラリー画面そのもの——サイト共通のヘッダーや戦闘画面由来の要素は
+ * 呼び出し側の責任であり、このコンポーネントの役割ではない。ゲーム
+ * データはrecommend.tsのrecommendGames()から、プレイヤーが実際に
+ * 選んだ技を元に計算される。
  */
 export function GameGallery({ reducedMotion, chosenMoves }: GameGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [introSettled, setIntroSettled] = useState(false)
 
   const effectiveChosenMoves = chosenMoves ?? DEFAULT_CHOSEN_MOVES
-  // Recomputed only when the chosen-moves input itself changes, not on
-  // every carousel navigation re-render — recommendGames is deterministic
-  // for a given input, so there's no correctness need to recompute, only
-  // a performance reason to avoid it.
+  // 選んだ技の入力自体が変わったときだけ再計算する。カルーセルの
+  // ナビゲーションによる再レンダリングのたびには再計算しない——
+  // recommendGamesは同じ入力に対して決定的なので、正しさのために
+  // 再計算が必要なわけではなく、避けるのはあくまでパフォーマンス上の理由。
   const games = useMemo(
     () => recommendGames(effectiveChosenMoves.map((m) => m.id)),
     [effectiveChosenMoves],

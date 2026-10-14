@@ -5,21 +5,21 @@ interface Synths {
   move: Tone.Synth
   attack: Tone.MembraneSynth
   hit: Tone.NoiseSynth
-  /** The pitched accent layered on top of `hit`'s noise — noise color
-   * alone (the original 5-variant design) turned out too subtle to read
-   * as "escalating" through small speakers; a rising pitch is a far more
-   * legible cue, so it carries the escalation now and the noise layer
-   * just adds texture underneath it. */
+  /** `hit`のノイズに重ねる音程付きアクセント — ノイズの音色だけ
+   * （当初の5バリアント案）では小さなスピーカーでは「盛り上がっている」
+   * ことが伝わりにくいと分かった。上がっていく音程の方がはるかに
+   * 読み取りやすい合図なので、今はこちらが盛り上がりを担い、ノイズ層は
+   * その下に質感を足すだけの役割になっている。 */
   hitTone: Tone.Synth
 }
 
-/** One hit's own noise color/envelope/volume/length, plus the pitched
- * accent note layered on top — mutated onto the shared synth instances
- * just before they trigger (cheaper than one synth per variant, and
- * Tone.js synths are built to have their own params reassigned freely
- * between triggers). Ordered to escalate across a battle's 5 attacks
- * (quiet/short/low → loud/long/high for the KO hit) rather than picked at
- * random, so the escalation reads as "タ・イクツ is wearing down." */
+/** 1発分のヒットが持つノイズの音色/エンベロープ/音量/長さと、その上に
+ * 重ねる音程付きのアクセント音 — 共有のsynthインスタンスへトリガー直前に
+ * 値を上書きする（バリアントごとにsynthを用意するより軽く、Tone.jsの
+ * synthはトリガー間でパラメータを自由に差し替えられる設計になっている）。
+ * ランダムではなく、戦闘5回の攻撃を通じて盛り上がる順（静か/短い/低い →
+ * 大きい/長い/高い=とどめの一撃）に並んでおり、これにより「タ・イクツが
+ * 弱っていっている」ことが伝わる。 */
 interface HitVariant {
   noiseType: 'white' | 'pink' | 'brown'
   decay: number
@@ -36,13 +36,12 @@ const HIT_VARIANTS: HitVariant[] = [
   { noiseType: 'brown', decay: 0.26, volume: -5, duration: '8n', tone: 'C6' },
 ]
 
-/** The ATTACK_LIMIT=5 moves a battle actually uses each cycle through a
- * different point in a low-register scale, picked deterministically from
- * the move's own id (not its slot position, which changes every reroll) —
- * the same move always sounds the same, but two different moves in the
- * same list are very unlikely to sound alike. Kept in MembraneSynth's own
- * low range so this still reads as "a thud," just a differently-pitched
- * one, not a melody. */
+/** ATTACK_LIMIT=5で実際に使われる技は、1戦ごとに低音域スケール上の
+ * 別々の音へ、スロット位置（rerollのたびに変わる）ではなく技自身のidから
+ * 決定的に割り当てられる——同じ技は常に同じ音になり、同じ一覧内の
+ * 別々の技が同じ音になることはまずない。あくまでMembraneSynthの低音域に
+ * 収めているので、メロディーではなく「ドスン」という音の高さ違いとして
+ * 聞こえる。 */
 const ATTACK_NOTES = ['C2', 'D2', 'E2', 'G2', 'A2', 'C3', 'D3', 'E3']
 
 function hashToIndex(id: string, length: number): number {
@@ -54,11 +53,11 @@ function hashToIndex(id: string, length: number): number {
 }
 
 /**
- * Three short electronic blips (cursor move / attack / hit) via Tone.js.
- * Tone.start() only ever runs inside a real user-gesture call stack (a
- * click/keydown handler), per the browser autoplay policy, and every
- * failure is swallowed: sound is a layer on top of the battle flow, never
- * a dependency of it.
+ * Tone.jsによる3種類の短い電子音（カーソル移動/攻撃/ヒット）。
+ * ブラウザの自動再生ポリシーにより、Tone.start()は実際のユーザー操作の
+ * コールスタック内（クリック/keydownハンドラ）でしか成功しない。失敗は
+ * 全て握りつぶす: サウンドは戦闘フローの上に乗る演出であり、その
+ * 依存先では決してない。
  */
 export function useCommandSound(enabled: boolean) {
   const synthsRef = useRef<Synths | null>(null)
@@ -70,7 +69,7 @@ export function useCommandSound(enabled: boolean) {
       await Tone.start()
       startedRef.current = true
     } catch {
-      // No user gesture yet, or audio is unavailable — stays silent.
+      // まだユーザー操作がない、またはオーディオが利用不可 — 無音のままにする。
     }
   }, [])
 
@@ -94,9 +93,9 @@ export function useCommandSound(enabled: boolean) {
     }).toDestination()
     hit.volume.value = -10
 
-    // 'triangle', not 'square' (move's own waveform) or MembraneSynth
-    // (attack's) — a third, distinct timbre so this doesn't get lost
-    // against either of them when it fires alongside hit's noise burst.
+    // 'triangle'にしている（move自身の波形'square'でもMembraneSynth
+    // （attackのもの）でもなく）— hitのノイズバーストと一緒に鳴ったときに
+    // 埋もれない、3つ目の独立した音色にするため。
     const hitTone = new Tone.Synth({
       oscillator: { type: 'triangle' },
       envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.08 },
@@ -127,7 +126,7 @@ export function useCommandSound(enabled: boolean) {
         try {
           fn(ensureSynths())
         } catch {
-          // Playback failure must never interrupt the battle flow.
+          // 再生の失敗が戦闘フローを止めることは絶対にあってはならない。
         }
       })()
     },
@@ -138,10 +137,10 @@ export function useCommandSound(enabled: boolean) {
     () => safePlay((s) => s.move.triggerAttackRelease('E6', '32n')),
     [safePlay],
   )
-  /** `moveId` picks this skill's own note out of ATTACK_NOTES (same move
-   * → same note every time; different moves are very unlikely to land on
-   * the same one) — omit it to fall back to the original fixed 'C2', e.g.
-   * for a caller that doesn't have a specific move in hand. */
+  /** `moveId`からATTACK_NOTESの中のこの技自身の音を選ぶ（同じ技なら
+   * 毎回同じ音、別の技が同じ音になることはまずない）——指定なしの場合は
+   * 元の固定音'C2'にフォールバックする（例えば手元に特定の技がない
+   * 呼び出し元向け）。 */
   const playAttack = useCallback(
     (moveId?: string) =>
       safePlay((s) => {
@@ -150,12 +149,12 @@ export function useCommandSound(enabled: boolean) {
       }),
     [safePlay],
   )
-  /** `attackNumber` is the battle's own 1-5 count (CommandMenu's
-   * `payload.attackNumber`) — out-of-range or omitted falls back to the
-   * last (loudest) variant rather than throwing, since a stray call here
-   * should never be able to break the hit flow over a sound choice. The
-   * noise burst (texture) and pitched tone (the actually-audible escalation
-   * cue) fire together on every hit. */
+  /** `attackNumber`は戦闘自身の1〜5のカウント（CommandMenuの
+   * `payload.attackNumber`）——範囲外や未指定の場合は例外を投げず最後
+   * （最も大きい）バリアントにフォールバックする。音選びのためだけに
+   * ヒットフローを壊すようなことがあってはならないため。ノイズ
+   * バースト（質感）と音程付きトーン（実際に聞こえる盛り上がりの合図）は
+   * 毎回のヒットで同時に鳴る。 */
   const playHit = useCallback(
     (attackNumber?: number) =>
       safePlay((s) => {

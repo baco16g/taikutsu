@@ -11,7 +11,7 @@ import { CENTER, HIT_INDEX_BY_HP, HP_SHAPES, VIEW_SIZE, type Hp } from '../lib/s
 import { COLLAPSE_HOLES } from '../lib/collapseHoles'
 
 export interface ImpactInfo {
-  /** fractional 0-1 position within the creature's own viewBox, for the particle canvas to map to pixels */
+  /** クリーチャー自身のviewBox内での0〜1の相対位置。パーティクルcanvas側がピクセルへ変換するために使う */
   xFrac: number
   yFrac: number
   big: boolean
@@ -30,16 +30,17 @@ const applyPathD = (el: SVGPathElement | null, d: string) => {
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 
-const WOBBLE_FADE_IN_DURATION = 0.6 // seconds to ease idle wobble back in after it was interrupted
-const HOVER_WOBBLE_BOOST = 0.6 // fully-hovered wobble amplitude = base * (1 + this)
-const HOVER_SPEED_BOOST = 0.55 // fully-hovered float/drift playback speed = base * (1 + this)
-const HOVER_SCALE = 1.035 // fully-hovered overall scale swell
+const WOBBLE_FADE_IN_DURATION = 0.6 // 中断後にアイドルwobbleを再び馴染ませるまでの秒数
+const HOVER_WOBBLE_BOOST = 0.6 // ホバー最大時のwobble振幅 = base * (1 + this)
+const HOVER_SPEED_BOOST = 0.55 // ホバー最大時のfloat/drift再生速度 = base * (1 + this)
+const HOVER_SCALE = 1.035 // ホバー最大時の全体スケール膨張
 
 /**
- * Per-point idle radius offset at a given gsap.ticker time. A pure function
- * of time (never a discrete from/to tween), so sampled on its own it has no
- * loop seam — the seam this module actually has to manage is the boundary
- * between "idle wobble is live" and "an attack timeline owns the contour".
+ * ある時刻（gsap.ticker time）における、各点ごとのアイドル半径オフセット。
+ * 時間の純粋関数（離散的なfrom/toのtweenでは決してない）なので、単体で
+ * サンプリングしてもループの継ぎ目がない——このモジュールが実際に管理
+ * すべき継ぎ目は「アイドルwobbleが生きている」状態と「攻撃タイムラインが
+ * 輪郭を所有している」状態の境界の方。
  */
 const computeWobbleDeltas = (shape: BlobPoint[], time: number): number[] => {
   const breathe = Math.sin(time * 0.35) * 3.2
@@ -56,16 +57,16 @@ const computeWobbleDeltas = (shape: BlobPoint[], time: number): number[] => {
 }
 
 /**
- * Owns the live contour: the idle breathing/wobble loop and the attack
- * morph timeline. The two never run at once — `isAttackingRef` gates the
- * idle ticker while a timeline is in flight. Crossing that boundary in
- * either direction must not visibly pop:
- * - entering an attack morphs from the contour's current *displayed*
- *   position (base shape + live wobble), not the unwobbled base shape;
- * - leaving an attack (resuming idle) fades the wobble back in from 0 over
- *   `WOBBLE_FADE_IN_DURATION`, since the idle sine functions are keyed off
- *   absolute elapsed time and would otherwise jump to whatever phase they
- *   happen to be at the moment they resume.
+ * 生きている輪郭を管理する: アイドル時の呼吸/wobbleループと、攻撃時の
+ * モーフタイムライン。この2つは同時には動かない——`isAttackingRef`が、
+ * タイムライン実行中はアイドル側のtickerをゲートする。この境界をどちら
+ * 向きに跨ぐ場合も見た目に飛んではいけない:
+ * - 攻撃に入るときは、wobbleのない基準形状ではなく、その瞬間「実際に
+ *   画面に表示されている」輪郭（基準形状＋生きているwobble）からモーフする。
+ * - 攻撃から抜ける（アイドルへ戻る）ときは、wobbleを0から
+ *   `WOBBLE_FADE_IN_DURATION`かけて馴染ませる——アイドルのsin関数群は
+ *   経過時間の絶対値で駆動しているため、そうしないと再開した瞬間の
+ *   位相へいきなり飛んでしまう。
  */
 export function useCreatureAnimation({
   idleEnabled,
@@ -84,20 +85,20 @@ export function useCreatureAnimation({
   const hpRef = useRef<Hp>(5)
   const restShapeRef = useRef<BlobPoint[]>(cloneBlobPoints(HP_SHAPES[5]))
   const isAttackingRef = useRef(false)
-  // gsap.ticker time at which idle wobble last resumed; -Infinity means "always been live"
+  // アイドルwobbleが最後に再開したgsap.ticker時刻。-Infinityは「ずっと生きている」を意味する
   const wobbleResumeTimeRef = useRef(-Infinity)
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
   const floatTweenRef = useRef<gsap.core.Tween | null>(null)
   const driftTweenARef = useRef<gsap.core.Tween | null>(null)
   const driftTweenBRef = useRef<gsap.core.Tween | null>(null)
-  // 0 = resting, 1 = fully "alert" (hovered) — eased by setHovered(), read by
-  // the idle tick to scale wobble amplitude and by setHovered() itself to
-  // scale the float/drift tweens' playback speed.
+  // 0 = 通常、1 = 完全に「気づいている」（ホバー中）— setHovered()がeaseし、
+  // アイドルのtickがwobble振幅のスケールに、setHovered()自身がfloat/drift
+  // tweenの再生速度のスケールに、それぞれこの値を読む。
   const hoverIntensityRef = useRef(0)
   const hoverTweenRef = useRef<gsap.core.Tween | null>(null)
   const hoverScaleTweenRef = useRef<gsap.core.Tween | null>(null)
 
-  // --- idle loop -----------------------------------------------------
+  // --- アイドルループ -----------------------------------------------------
   useEffect(() => {
     if (reducedMotion) {
       applyPathD(clipPathRef.current, blobPointsToPath(restShapeRef.current, CENTER, CENTER))
@@ -110,11 +111,11 @@ export function useCreatureAnimation({
         applyPathD(clipPathRef.current, blobPointsToPath(restShapeRef.current, CENTER, CENTER))
         return
       }
-      // Fade back in from 0 if idle just resumed after an attack, so the
-      // contour continues exactly where the attack left it instead of
-      // snapping to the sine functions' current phase.
+      // 攻撃後にアイドルが再開した直後なら0から馴染ませる。これにより
+      // 輪郭は攻撃が止めた場所からそのまま続き、sin関数群の現在の位相へ
+      // 飛んで見えることがない。
       const fade = clamp01((time - wobbleResumeTimeRef.current) / WOBBLE_FADE_IN_DURATION)
-      // Hovering makes it read as "noticing you" — same motion, just louder.
+      // ホバーすると「気づいた」ように見える——同じ動きを、単に大きくするだけ。
       const hoverMul = 1 + hoverIntensityRef.current * HOVER_WOBBLE_BOOST
       const deltas = computeWobbleDeltas(restShapeRef.current, time)
       const deformed = restShapeRef.current.map((p, i) => ({
@@ -130,10 +131,10 @@ export function useCreatureAnimation({
     }
   }, [idleEnabled, reducedMotion])
 
-  // --- floating + texture drift (transform/opacity only, never re-filters) ---
-  // Two noise layers (different seeds) drift at different speeds/directions
-  // and layer B also cross-fades its opacity — the combination reads as the
-  // pattern itself flowing rather than one static image sliding around.
+  // --- 浮遊 + テクスチャのdrift（transform/opacityのみ、フィルタ再適用はしない） ---
+  // 2枚のノイズレイヤー（別シード）が別々の速度/方向でdriftし、レイヤーBは
+  // opacityのクロスフェードも行う——この組み合わせにより、1枚の静止画が
+  // ただスライドするのではなく、柄自体が流れているように見える。
   useEffect(() => {
     floatTweenRef.current?.kill()
     driftTweenARef.current?.kill()
@@ -210,11 +211,11 @@ export function useCreatureAnimation({
   )
 
   /**
-   * Hover is a continuous 0→1 intensity, not a toggle: entering/leaving both
-   * ease, and the same value drives three things at once — idle wobble
-   * amplitude (read in the tick above), float/drift playback speed, and an
-   * overall scale swell — so it reads as one consistent "noticing you"
-   * reaction rather than three independently-timed effects.
+   * ホバーはON/OFFのトグルではなく連続的な0→1の強度: 入る時も出る時も
+   * easeし、同じ値が同時に3つのことを駆動する——アイドルwobbleの振幅
+   * （上のtickで読む）、float/driftの再生速度、全体のスケール膨張——
+   * これによりバラバラのタイミングの3つの演出ではなく、1つの一貫した
+   * 「気づいた」反応として見える。
    */
   const setHovered = useCallback(
     (hovered: boolean) => {
@@ -255,10 +256,9 @@ export function useCreatureAnimation({
       if (isAttackingRef.current || hpRef.current === 0) return false
       isAttackingRef.current = true
 
-      // Start the morph from what's actually on screen right now (base rest
-      // shape + whatever idle wobble/fade was live), not the unwobbled base
-      // — otherwise the contour visibly snaps to baseline the instant an
-      // attack begins.
+      // モーフは、wobbleのない基準形状ではなく「今まさに画面に出ている」
+      // もの（基準形状＋その時生きていたwobble/fade）から始める——
+      // そうしないと攻撃開始の瞬間に輪郭がbaselineへ目に見えて飛んでしまう。
       const attackStartTime = gsap.ticker.time
       const liveFade =
         !reducedMotion && idleEnabled
@@ -305,10 +305,10 @@ export function useCreatureAnimation({
         reducedMotion ? 0 : 0.03,
       )
 
-      // The final blow never morphs the clip path toward HP0's collapsed
-      // points — a shrinking silhouette reads as "retreating into the
-      // distance". Instead the body stays its own size and is eaten away by
-      // the mask-hole erosion below, so it reads as crumbling apart in place.
+      // 最後の一撃だけはclip pathをHP0の崩壊形状へモーフさせない——
+      // シルエットが縮むと「遠ざかっていく」ように見えてしまう。
+      // 代わりに本体のサイズはそのままに、下のマスク穴の侵食で
+      // 削られていくことで、その場で崩れ落ちるように見せている。
       if (!isFinalBlow) {
         tl.to(
           proxy,
@@ -340,11 +340,11 @@ export function useCreatureAnimation({
             0.09,
           )
         } else {
-          // Impact squash, a brief held stillness (0.12 -> 0.24, nothing
-          // scheduled), then release while the body crumbles: mask holes pop
-          // open in a scattered cascade across the whole silhouette and
-          // particles erupt from several points in sync, so the mass itself
-          // reads as turning into the debris rather than just shrinking.
+          // 着弾のsquash、短い静止（0.12〜0.24の間、何も予定されていない）、
+          // その後に本体が崩れながらリリース: マスクの穴がシルエット全体に
+          // 散らばって連鎖的に開き、複数の地点からパーティクルが同期して
+          // 噴き出すことで、本体そのものが瓦礫に変わっていくように見える
+          // （単に縮むだけではなく）。
           tl.to(
             squashGroupRef.current,
             { scaleX: 1.1, scaleY: 0.8, duration: 0.12, ease: 'power2.out' },

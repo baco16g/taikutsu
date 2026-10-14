@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import styles from './BattleStatus.module.css'
 
 export interface BattleStatusProps {
-  /** Dock element IntroActor measures/paints the shared タ・イクツ instance over — this component renders no creature of its own. */
+  /** IntroActorが共有タ・イクツインスタンスを計測/描画する対象のドック要素——このコンポーネント自身はクリーチャーを一切描画しない。 */
   creatureDockRef: Ref<HTMLDivElement>
   creatureKicker: string
   creatureName: string
@@ -13,7 +13,7 @@ export interface BattleStatusProps {
   reducedMotion: boolean
 }
 
-/** タ・イクツ's name/HP readout during battle — fades out once `defeated`, since DefeatMessage takes over this same spot right after. */
+/** 戦闘中のタ・イクツの名前/HP表示——`defeated`になるとフェードアウトする。直後にDefeatMessageが同じ場所を引き継ぐため。 */
 export function BattleStatus({
   creatureDockRef,
   creatureKicker,

@@ -1,25 +1,24 @@
 import { useEffect, useRef, type RefObject } from 'react'
 
 export interface OversizedCanvasSize {
-  /** The canvas's own parent box, in CSS pixels — what caller-space coordinates (e.g. xFrac/yFrac) are relative to. */
+  /** canvas自身の親要素の箱（CSSピクセル）——呼び出し側の座標（例: xFrac/yFrac）が相対的に指す対象。 */
   boxW: number
   boxH: number
-  /** The canvas's own (larger) drawing surface, in CSS pixels. */
+  /** canvas自身の（より大きい）描画面（CSSピクセル）。 */
   canvasW: number
   canvasH: number
-  /** Where the box sits within the canvas surface — add to box-relative coordinates to recentre them onto the canvas. */
+  /** canvasの描画面内で箱がどこに位置するか——箱基準の座標にこれを足すとcanvas上の座標に再中心化できる。 */
   offsetX: number
   offsetY: number
   dpr: number
 }
 
 /**
- * Sizes `canvasRef`'s canvas to `overflow`× its parent element's box,
- * centered over it, DPR-aware, and kept in sync via ResizeObserver — shared
- * setup for a canvas whose drawn content (flung debris, drifting dust) needs
- * room to move before fading, without ever being clipped by a hard
- * rectangular edge. Returns a ref with the current sizing, read fresh each
- * animation frame by the caller's own draw loop.
+ * `canvasRef`のcanvasを親要素の箱の`overflow`倍のサイズにし、中央寄せで
+ * 重ね、DPRを考慮し、ResizeObserverで同期を保つ——描画内容（飛び散る
+ * 破片、漂うdust）が硬い矩形の端で切られることなく消える前に動き回る
+ * 余地を必要とするcanvas向けの共有セットアップ。現在のサイズを持つrefを
+ * 返し、呼び出し側自身の描画ループが毎フレーム最新値を読む。
  */
 export function useOversizedCanvas(
   canvasRef: RefObject<HTMLCanvasElement | null>,

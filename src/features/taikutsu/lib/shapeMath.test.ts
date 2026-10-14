@@ -28,7 +28,7 @@ describe('blobPointsToPath', () => {
     const d = blobPointsToPath(points, 50, 50)
     expect(d.startsWith('M 60.00 50.00')).toBe(true)
     expect(d.endsWith('Z')).toBe(true)
-    // One C segment per point on a closed loop.
+    // 閉じたループの各点につきCセグメントが1つ。
     expect(d.match(/C /g)).toHaveLength(points.length)
   })
 })

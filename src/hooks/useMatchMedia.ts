@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
-/** Subscribes to a media query via useSyncExternalStore, so there's no manual setState-in-effect sync to keep correct as `query` changes. */
+/** useSyncExternalStore経由でメディアクエリを購読する。これにより`query`が変わっても手動のsetState-in-effect同期を正しく保つ必要がない。 */
 export function useMatchMedia(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {

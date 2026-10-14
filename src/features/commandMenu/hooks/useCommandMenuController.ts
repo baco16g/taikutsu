@@ -19,9 +19,9 @@ function freshState(): ControllerState {
 }
 
 /**
- * Owns the move pool / used-move bookkeeping: 6 of 27 moves on screen at a
- * time, a used move never reappears, "show me something else" prefers
- * never-shown moves first, and the session ends after 5 attacks.
+ * 技プール/使用済み技の管理を担う: 27個中6個を常に画面に表示し、
+ * 使用済みの技は二度と現れず、「ほかの技を見る」はまだ一度も表示して
+ * いない技を優先し、5回攻撃した時点でセッションが終わる。
  */
 export function useCommandMenuController() {
   const poolRef = useRef<MoveEntry[]>(createShuffledPool())
@@ -43,7 +43,7 @@ export function useCommandMenuController() {
     setState({ ...freshState(), currentMoves: first })
   }, [])
 
-  /** "ほかの技を見る": swap the visible six without consuming an attack. */
+  /** 「ほかの技を見る」: 攻撃を消費せずに表示中の6つを入れ替える。 */
   const reroll = useCallback(() => {
     setState((prev) => {
       if (prev.status !== 'active') return prev
@@ -55,7 +55,7 @@ export function useCommandMenuController() {
     })
   }, [])
 
-  /** Marks `moveId` as used and lines up the next six (or ends the session at 5 attacks). */
+  /** `moveId`を使用済みにし、次の6つを並べる（5回攻撃した場合はセッションを終える）。 */
   const commitAttack = useCallback((moveId: string) => {
     usedIdsRef.current.add(moveId)
     setState((prev) => {
