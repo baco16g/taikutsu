@@ -107,7 +107,7 @@ export function GalleryCarousel({
         className={styles.viewport}
         role="region"
         aria-roledescription="carousel"
-        aria-label="スキルから推薦されたゲーム、全6作品"
+        aria-label={`スキルから推薦されたゲーム、全${count}作品`}
       >
         <div className={styles.track} ref={trackRef}>
           {games.map((game, i) => {

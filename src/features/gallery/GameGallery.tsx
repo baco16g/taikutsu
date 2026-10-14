@@ -1,19 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { GalleryCarousel } from './GalleryCarousel'
 import { GameInfoPanel } from './GameInfoPanel'
-import { FIXTURE_CHOSEN_MOVES, FIXTURE_GAMES } from './recommendationFixture'
+import { DEFAULT_CHOSEN_MOVES, recommendGames } from './recommend'
 import type { GalleryMove } from './types'
 import styles from './GameGallery.module.css'
 
 export interface GameGalleryProps {
   reducedMotion: boolean
   /**
-   * The player's actual 5 chosen moves for this session (from the
-   * battle→gallery reveal). There is no real recommendation engine yet
-   * (see recommendationFixture.ts), so only their count feeds the
-   * heading today. Omit to keep using the fixture's own moves instead (a
-   * fallback for any caller that has no real session to pull from).
+   * The player's actual chosen moves for this session (from the
+   * battle→gallery reveal), fed into the real recommendation engine (see
+   * recommend.ts) to pick which games appear. Omit to fall back to
+   * DEFAULT_CHOSEN_MOVES instead (for any caller with no real session to
+   * pull from, e.g. manual testing).
    */
   chosenMoves?: GalleryMove[]
 }
@@ -21,15 +21,22 @@ export interface GameGalleryProps {
 /**
  * The gallery screen itself — the shared site header and anything from
  * the battle screen are the caller's job, not this component's. Game data
- * comes from recommendationFixture.ts, which stands in for a real
- * recommendation engine.
+ * comes from recommend.ts's recommendGames(), computed from the player's
+ * actual chosen moves.
  */
 export function GameGallery({ reducedMotion, chosenMoves }: GameGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [introSettled, setIntroSettled] = useState(false)
 
-  const games = FIXTURE_GAMES
-  const effectiveChosenMoves = chosenMoves ?? FIXTURE_CHOSEN_MOVES
+  const effectiveChosenMoves = chosenMoves ?? DEFAULT_CHOSEN_MOVES
+  // Recomputed only when the chosen-moves input itself changes, not on
+  // every carousel navigation re-render — recommendGames is deterministic
+  // for a given input, so there's no correctness need to recompute, only
+  // a performance reason to avoid it.
+  const games = useMemo(
+    () => recommendGames(effectiveChosenMoves.map((m) => m.id)),
+    [effectiveChosenMoves],
+  )
   const game = games[selectedIndex]
 
   return (
