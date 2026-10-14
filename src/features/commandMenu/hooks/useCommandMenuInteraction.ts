@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -8,108 +7,63 @@ import {
   type RefObject,
 } from 'react'
 import type { useCommandMenuAnimation } from './useCommandMenuAnimation'
+import type { CommandMenuController } from './useCommandMenuController'
 import type { useCommandSound } from './useCommandSound'
-import type { LandedMove, MoveEntry } from '../types'
-
-type CommandMenuStatus = 'active' | 'complete'
-type Anim = ReturnType<typeof useCommandMenuAnimation>
-type Sound = ReturnType<typeof useCommandSound>
+import type { LandedMove } from '../types'
 
 export interface UseCommandMenuInteractionOptions {
-  status: CommandMenuStatus
-  currentMoves: MoveEntry[]
-  attackCount: number
+  controller: CommandMenuController
+  anim: ReturnType<typeof useCommandMenuAnimation>
+  sound: ReturnType<typeof useCommandSound>
   reducedMotion: boolean
   supportsHover: boolean
-  anim: Anim
-  sound: Sound
-  onImpact: (move: LandedMove) => void
   /** 攻撃の着弾先となる要素（タ・イクツ本体のラッパー）。 */
   targetRef: RefObject<HTMLElement | null>
-  commitAttack: (moveId: string) => void
-  bandRef: RefObject<HTMLDivElement | null>
-  bandPulseRef: RefObject<HTMLDivElement | null>
-  listWrapRef: RefObject<HTMLDivElement | null>
-  itemElsRef: RefObject<(HTMLButtonElement | null)[]>
-  iconElsRef: RefObject<(SVGSVGElement | null)[]>
-  fxLayerRef: RefObject<HTMLDivElement | null>
+  onImpact: (move: LandedMove) => void
 }
 
 /**
- * カーソル移動・攻撃確定・アイドル明滅・band位置の再同期など、
- * 「ユーザー操作とband/アイコンの状態」をまとめて担う。技プールの管理
- * （useCommandMenuController）やDOM振り付け自体（useCommandMenuAnimation）
- * とは責務が別なので、CommandMenu.tsxから分離している——残るのはJSXの
- * 描画とDOM ref自体の所有のみ。
+ * コマンドメニューの操作ルール: どの行にカーソルがあるか、攻撃中は入力を
+ * 受け付けないこと、タッチ端末では同じ行の2回目のタップで確定すること、
+ * 矢印キーでの移動。技プールの状態はuseCommandMenuController、DOMの
+ * 振り付けはuseCommandMenuAnimationが持ち、このhookは行番号で指示を出す。
  */
 export function useCommandMenuInteraction({
-  status,
-  currentMoves,
-  attackCount,
-  reducedMotion,
-  supportsHover,
+  controller,
   anim,
   sound,
-  onImpact,
+  reducedMotion,
+  supportsHover,
   targetRef,
-  commitAttack,
-  bandRef,
-  bandPulseRef,
-  listWrapRef,
-  itemElsRef,
-  iconElsRef,
-  fxLayerRef,
+  onImpact,
 }: UseCommandMenuInteractionOptions) {
+  const { status, currentMoves, attackCount, commitAttack } = controller
   const [cursorIndex, setCursorIndex] = useState(0)
   const [isAttacking, setIsAttacking] = useState(false)
+  // 攻撃開始と同じイベント内で次の入力を弾くため、stateとは別にrefでも持つ。
   const isAttackingRef = useRef(false)
   const lastPointerMoveAtRef = useRef(0)
   const cursorIndexRef = useRef(cursorIndex)
   cursorIndexRef.current = cursorIndex
-  const revealInFlightRef = useRef(false)
-  // ホバー不可（タッチ）端末ではタップ一発でフォーカスとクリックが同時に発火するため、
-  // 本来プレビューのはずの1タップがそのまま即confirmになってしまい、
-  // bandがsqueezeBandに上書きされる一瞬しか見えていなかった。
-  // 「その行が既にarm済みか」をゲートにすることで、1タップ目を「選択」、
-  // 同じ行への2タップ目を「確定」に分離し、bandによるプレビューを
-  // 形だけでなく実際に見える1ステップとして成立させている。
-  // cursorIndex（previewIndexが動かす値）とは別管理にしているのは、
-  // armedが追うべきは「今プレビュー中の行」ではなく
-  // 「ユーザーが意図的にこの行を2回アクティベートしたか」だから。
+  // タッチ端末では1回のタップでfocusとclickが同時に発火するため、そのままでは
+  // プレビューのつもりのタップが即確定になってしまう。「この行は既に1回
+  // タップされたか」を覚えておき、1回目を選択、同じ行への2回目を確定にする。
+  // 追うのは「今プレビュー中の行」ではなく「同じ行が続けてタップされたか」
+  // なので、cursorIndexとは別に持つ。
   const armedIndexRef = useRef<number | null>(null)
 
   // 表示中の6つが変わるたび（マウント・reroll・攻撃後の次ラウンド）、
-  // カーソルは先頭に戻り新しい一覧がグループとしてrevealする。
-  // statusも依存配列に含めているのは、5回目の攻撃ではcurrentMovesを
-  // 入れ替えずにstatusだけが'complete'へ切り替わり、そのときも攻撃中の
-  // ロックを解除する必要があるため。
+  // カーソルは先頭に戻り新しい一覧がrevealする。statusも依存配列に
+  // 含めているのは、5回目の攻撃ではcurrentMovesを入れ替えずにstatusだけが
+  // 'complete'へ切り替わり、そのときも攻撃中のロックを解除する必要があるため。
   useLayoutEffect(() => {
     if (status === 'active') {
-      // どのみち必要なDOM計測と一緒にカーソルを新しい6つ/statusに合わせて
-      // リセットしている。render時点の計算に分離できる処理ではない。
+      // 新しい6つのDOM計測（reveal）と同じタイミングでカーソルを戻す必要があり、
+      // render中の計算には置き換えられない。
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCursorIndex(0)
       armedIndexRef.current = null
-      const itemEls = itemElsRef.current.filter((el): el is HTMLButtonElement => el !== null)
-      anim.revealItems(itemEls, reducedMotion)
-      anim.moveCursorBand(
-        bandRef.current,
-        itemEls[0] ?? null,
-        listWrapRef.current,
-        reducedMotion,
-        'reveal',
-      )
-      // このreveal tween（約0.46秒のバウンスイン）の最中にResizeObserver
-      // コールバック（新しい6つの行がレイアウトされてlistWrapの高さが
-      // 落ち着く等）が走ってgsap.set()で上書きされないよう、下のリサイズ
-      // 同期effectをこの間だけガードする。reducedMotion下はそもそも衝突の
-      // 起きない即時gsap.setなのでスキップ。
-      if (!reducedMotion) {
-        revealInFlightRef.current = true
-        window.setTimeout(() => {
-          revealInFlightRef.current = false
-        }, 500)
-      }
+      anim.revealList(reducedMotion)
     }
 
     isAttackingRef.current = false
@@ -117,191 +71,79 @@ export function useCommandMenuInteraction({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMoves, status])
 
-  // bandのy/heightはpreviewIndex（上のreveal含む）が走った瞬間の
-  // itemEl.offsetHeightから決まる。reroll・カーソル移動であれば、
-  // それらは常にDOMが新しい内容を反映した後に起きるので正しい。
-  // しかし純粋なブラウザのリサイズ・画面回転では再計測が走らない。
-  // 説明文が省略されず折り返す実装のため、currentMovesもstatusも変わらない
-  // 幅で行の高さだけが変わるケースがあり、bandの最終計測値が行の実際の
-  // 新しい高さとずれたままになる。listWrapにResizeObserverを張ることで、
-  // GSAPのtween自体には触れずにそのズレをスナップで再同期している。
+  // ウィンドウのリサイズで行の高さが変わったら、bandを現在の行へ合わせ直す。
   useEffect(() => {
-    const listWrap = listWrapRef.current
-    if (!listWrap || status !== 'active') return
-    // ResizeObserverはobserve()直後に現在サイズで1回必ず発火する。
-    // その最初の1回は無視する — 上のrevealが既にbandを正しい位置に
-    // 置いた直後であり、ここで反応するとgsap.set()でreveal tweenの
-    // バウンスインを上書き・中断させてしまう。
-    let isFirstCallback = true
-    const ro = new ResizeObserver(() => {
-      if (isFirstCallback) {
-        isFirstCallback = false
-        return
-      }
-      if (isAttackingRef.current || revealInFlightRef.current) return
-      anim.moveCursorBand(
-        bandRef.current,
-        itemElsRef.current[cursorIndexRef.current],
-        listWrapRef.current,
-        true,
-        'instant',
-      )
+    if (status !== 'active') return
+    return anim.observeListResize(() => {
+      if (isAttackingRef.current) return
+      anim.snapBandTo(cursorIndexRef.current)
     })
-    ro.observe(listWrap)
-    return () => ro.disconnect()
-  }, [status, anim, listWrapRef, bandRef, itemElsRef])
+  }, [status, anim])
 
-  // コンポーネントの寿命いっぱい一度だけ開始し続ける
-  // （reducedMotionがONになるまで）。行ごと・reveal・glideのたびに
-  // 再トリガーする作りではない — bandPulseRef側の構造でそもそも
-  // それらと独立しているため。
-  useEffect(() => {
-    const pulseEl = bandPulseRef.current
-    if (status !== 'active' || reducedMotion) {
-      anim.stopIdlePulse(pulseEl)
+  const previewIndex = (i: number, viaPointer = false) => {
+    if (status !== 'active' || isAttackingRef.current || i === cursorIndex) return
+    // 新しい6つは古いボタンと同じ位置にマウントされるため、マウスが
+    // 止まったままでもブラウザはmouseenterを発火する。直前にポインタが
+    // 動いていないhoverは無視し、reveal直後のカーソルを先頭のままにする。
+    if (viaPointer && performance.now() - lastPointerMoveAtRef.current > 120) return
+    // 別の行へカーソルが移ったら、タッチの1回目のタップの選択は解除する。
+    if (armedIndexRef.current !== i) armedIndexRef.current = null
+    setCursorIndex(i)
+    anim.glideBandTo(i, reducedMotion)
+    sound.playMove()
+  }
+
+  const confirmAttack = (i: number) => {
+    if (status !== 'active' || isAttackingRef.current) return
+    const move = currentMoves[i]
+    // iがcurrentMovesの範囲外になるケースのガード（TSの配列型は
+    // インデックスの範囲を静的に保証しないため）。
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!move) return
+
+    isAttackingRef.current = true
+    setIsAttacking(true)
+    setCursorIndex(i)
+
+    const attackNumber = attackCount + 1
+    sound.playAttack(move.id)
+    anim.playAttack(i, targetRef, reducedMotion, {
+      onImpact: () => {
+        sound.playHit(attackNumber)
+        onImpact({ id: move.id, name: move.name })
+      },
+      onLanded: () => commitAttack(move.id),
+    })
+  }
+
+  // マウス端末ではhoverがプレビューを担うので、クリックは即確定。
+  // タッチ端末では、同じタップのfocusでpreviewIndexが既にbandを動かして
+  // いるので、1回目は選択だけにし、同じ行への2回目で確定する。
+  const handleRowActivate = (i: number) => {
+    if (status !== 'active' || isAttackingRef.current) return
+    if (!supportsHover && armedIndexRef.current !== i) {
+      armedIndexRef.current = i
       return
     }
-    anim.startIdlePulse(pulseEl)
-    return () => {
-      anim.stopIdlePulse(pulseEl)
-    }
-  }, [status, reducedMotion, anim, bandPulseRef])
+    armedIndexRef.current = null
+    confirmAttack(i)
+  }
 
-  const previewIndex = useCallback(
-    (i: number, viaPointer = false) => {
-      if (status !== 'active' || isAttackingRef.current || i === cursorIndex) return
-      // 新しい6つは古いボタンと同じ画面位置にマウントされる。実際のマウスが
-      // 動いていなければ、ブラウザは今そこにあるものに対してmouseenterを
-      // 発火してしまう。このフェイクなhoverを無視することで、revealした
-      // 直後の一覧のカーソルが先頭のままでいられる（ポインタがたまたま
-      // 止まっていた位置へ飛ばない）。
-      if (viaPointer && performance.now() - lastPointerMoveAtRef.current > 120) return
-      // 現在armされている行と違う行へプレビューが移動したらdisarmする
-      // （タッチ経路）。armedが意味するのは「このまさに同じ行を連続で
-      // タップした」であって「過去に一度でもarmされたことがある」では
-      // ないため。
-      if (armedIndexRef.current !== i) armedIndexRef.current = null
-      setCursorIndex(i)
-      anim.moveCursorBand(
-        bandRef.current,
-        itemElsRef.current[i],
-        listWrapRef.current,
-        reducedMotion,
-        'glide',
-      )
-      sound.playMove()
-    },
-    [status, cursorIndex, anim, reducedMotion, sound, bandRef, itemElsRef, listWrapRef],
-  )
+  const handleListKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
+    if (status !== 'active' || isAttackingRef.current) return
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    e.preventDefault()
+    const delta = e.key === 'ArrowDown' ? 1 : -1
+    const next = (cursorIndex + delta + currentMoves.length) % currentMoves.length
+    // フォーカスを動かすだけにする。移動先のonFocusがpreviewIndexを呼ぶので、
+    // ここでも呼ぶと二重に発火する（focus()が同期的にonFocusを発火する時点では
+    // 新しいcursorIndexがまだcommitされておらず、ガードが効かない）。
+    anim.focusItem(next)
+  }
 
-  const confirmAttack = useCallback(
-    (i: number) => {
-      if (status !== 'active' || isAttackingRef.current) return
-      const move = currentMoves[i]
-      // iがcurrentMovesの範囲外になるケースのガード（TSの配列型は
-      // インデックスの範囲を静的に保証しないため）。
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!move) return
-
-      isAttackingRef.current = true
-      setIsAttacking(true)
-      setCursorIndex(i)
-
-      const attackNumber = attackCount + 1
-      sound.playAttack(move.id)
-      // band自体のタップ確定フィードバック — この下で飛ばす演出の
-      // 予備動作ではなく、無関係な独立した演出。
-      anim.squeezeBand(bandRef.current, reducedMotion)
-
-      // 飛ぶのは行全体ではなく技アイコン。
-      const fromEl = iconElsRef.current[i]
-      const fxLayer = fxLayerRef.current
-      if (!fromEl || !fxLayer) {
-        commitAttack(move.id)
-        return
-      }
-
-      const launchFlight = () => {
-        anim.playAttackFlight({
-          fromEl,
-          targetEl: targetRef.current,
-          fxLayer,
-          reducedMotion,
-          onImpact: () => {
-            sound.playHit(attackNumber)
-            onImpact({ id: move.id, name: move.name })
-          },
-          onLanded: () => commitAttack(move.id),
-        })
-      }
-
-      // squeezeの直後ではなく少し間を置く — squeezeと飛翔は別々の
-      // マイクロインタラクションであり、同時に始めると「確定してから
-      // 技が発動する」ではなく1つの動きに融合して見えてしまう。
-      // reducedMotion下はスキップ: playAttackFlightがそちらでは
-      // 同期的に即解決するため、遅延させてもHP/reveal更新を
-      // 何もないまま足止めするだけになる。
-      if (reducedMotion) {
-        launchFlight()
-      } else {
-        window.setTimeout(launchFlight, 90)
-      }
-    },
-    [
-      status,
-      currentMoves,
-      attackCount,
-      sound,
-      onImpact,
-      anim,
-      reducedMotion,
-      targetRef,
-      commitAttack,
-      bandRef,
-      iconElsRef,
-      fxLayerRef,
-    ],
-  )
-
-  // クリック/タップのゲート: 実ホバーを持つ端末ではクリックは常に
-  // 即confirm（ホバーが既にプレビュー役を果たしているため）。
-  // タッチ端末では、まだarmされていない行への最初のアクティベートは
-  // armするだけ（この直前に同じタップでonFocusから呼ばれたpreviewIndexが
-  // 既にbandをそこへ動かしている）— 同じ行への2回目のアクティベートで
-  // 初めてconfirmする。
-  const handleRowActivate = useCallback(
-    (i: number) => {
-      if (status !== 'active' || isAttackingRef.current) return
-      if (!supportsHover && armedIndexRef.current !== i) {
-        armedIndexRef.current = i
-        return
-      }
-      armedIndexRef.current = null
-      confirmAttack(i)
-    },
-    [status, supportsHover, confirmAttack],
-  )
-
-  const handleListKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLUListElement>) => {
-      if (status !== 'active' || isAttackingRef.current) return
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
-      e.preventDefault()
-      const delta = e.key === 'ArrowDown' ? 1 : -1
-      const next = (cursorIndex + delta + currentMoves.length) % currentMoves.length
-      // DOMフォーカスを動かすだけでよい — 対象のonFocusハンドラが
-      // previewIndexを自分で呼ぶ。ここでも呼ぶと二重発火する:
-      // focus()が同期的にonFocusを発火させる時点でReactはまだ新しい
-      // cursorIndexをcommitしていないため、previewIndex自身の
-      // i === cursorIndexガードがこの呼び出しをno-opと認識できない。
-      itemElsRef.current[next]?.focus()
-    },
-    [status, cursorIndex, currentMoves.length, itemElsRef],
-  )
-
-  const handleListPointerMove = useCallback(() => {
+  const handleListPointerMove = () => {
     lastPointerMoveAtRef.current = performance.now()
-  }, [])
+  }
 
   return {
     cursorIndex,

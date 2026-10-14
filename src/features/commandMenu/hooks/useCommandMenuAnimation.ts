@@ -1,27 +1,23 @@
-import { useRef, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import styles from '../components/CommandMenu.module.css'
 
-/**
- * コマンドメニューのための純粋なDOM振り付け: 行間をグライドする選択band
- * （中断に強い — 全てのband tweenが同じ要素/プロパティを対象にしているため
- * GSAPが上書きを自動で処理する）、新しい6つが現れた時のreveal、攻撃の
- * 飛翔と着弾のバースト。
- *
- * React refのrefではなくDOM要素を直接受け取る作りにすることで、
- * CommandMenuのrender状態から切り離している。CommandMenuは自身の
- * イベントハンドラやeffectからこれらを呼ぶだけ。
- */
+type BandMove = 'instant' | 'reveal' | 'glide'
+
+export interface AttackFlightCallbacks {
+  /** 飛んだアイコンがタ・イクツに届いた瞬間。 */
+  onImpact: () => void
+  /** 着弾処理まで終わり、次の6つへ進んでよい時点。 */
+  onLanded: () => void
+}
+
 /**
  * `ancestorEl`から見た`itemEl`のオフセットを、`offsetParent`チェーンを
- * たどって`offsetTop`を積算することで求める。`getBoundingClientRect()`と
- * 違い、メニューの-6度の回転の影響を受けない: 回転した要素のbounding
- * rectは軸に沿った「見た目上の」ボックス（回転すると横長が縦長寄りに
- * 見える）であり、それを別要素のローカルな`height`/`y`へそのまま
- * フィードバックするのは誤り。offsetTop/offsetHeightは純粋に
- * transform適用前のレイアウト空間で定義されており、これがband
- * （同じ共有ラッパーによって同様に回転している）が本当に必要とする値。
+ * たどって`offsetTop`を積算することで求める。`getBoundingClientRect()`は
+ * メニューの-6度の回転を含んだ見た目上の箱を返すため、同じく回転して
+ * いるbandのローカルな`y`/`height`へは使えない。offsetTop/offsetHeightは
+ * transform適用前のレイアウト空間の値なので、そのまま使える。
  */
 function offsetTopWithin(itemEl: HTMLElement, ancestorEl: HTMLElement): number {
   let top = 0
@@ -33,24 +29,33 @@ function offsetTopWithin(itemEl: HTMLElement, ancestorEl: HTMLElement): number {
   return top
 }
 
-export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>) {
+/**
+ * コマンドメニューのDOM振り付け: 行間をグライドする選択band、新しい6つの
+ * reveal、攻撃アイコンの飛翔と着弾のバースト、bandのアイドル明滅。
+ *
+ * 振り付けが直接操作するDOM要素のrefはこのhookが所有し、CommandMenuは
+ * それをJSXに結び付けるだけ。操作側（useCommandMenuInteraction）は行番号で
+ * 指示し、DOM要素には触れない。
+ */
+export function useCommandMenuAnimation({ idlePulseActive }: { idlePulseActive: boolean }) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const listWrapRef = useRef<HTMLDivElement>(null)
+  const bandRef = useRef<HTMLDivElement>(null)
+  // アイドル明滅はband自身ではなくこの子要素で動かす。band自身のtransformは
+  // glide/reveal/squeezeがoverwrite:'auto'で動かすため、同じ要素で明滅させると
+  // 操作のたびにループが止まってしまう。子要素はbandの位置/サイズを
+  // そのまま継承するので、独立しているのは明滅のアニメーションだけ。
+  const bandPulseRef = useRef<HTMLDivElement>(null)
+  const fxLayerRef = useRef<HTMLDivElement>(null)
+  const itemElsRef = useRef<(HTMLButtonElement | null)[]>([])
+  // 飛ばすのは行全体ではなく技アイコン（行全体だと「コマンドがメニューから
+  // 出ていく」ように読めてしまう）。
+  const iconElsRef = useRef<(SVGSVGElement | null)[]>([])
   const flightSeqRef = useRef(0)
+  const revealInFlightRef = useRef(false)
 
-  const { contextSafe } = useGSAP({ scope: scopeRef })
+  const { contextSafe } = useGSAP({ scope: rootRef })
 
-  // アイドル時の明滅ループは、bandEl自身ではなく専用の別要素
-  // （CommandMenu.tsxのbandPulseRef、bandの子要素）だけに存在する。
-  // 以前はbandEl自身の`scale`をglide/reveal/squeezeと共有しており、
-  // それらは全て同じプロパティに対してoverwrite:'auto'を呼んでいた
-  // ため、別の行にホバーしたり攻撃を確定したりするたびにループが
-  // サイクルの途中で毎回止まっていた（報告: 「次の操作で上書きされて
-  // 欲しくない」）。別のDOMノードに対する別のGSAPターゲットは、
-  // それに一切触れないtweenによって上書きされようがない:
-  // これにより、band自体の位置/サイズ/popを動かすだけの
-  // glide/reveal/squeezeを挟んでも明滅は途切れず続く。（なお明滅層は
-  // bandElのcontentとしてレイアウト・描画されるため、その位置/サイズ/
-  // transformは何もせずとも自動的に継承される——独立しているのは
-  // 明滅「自身」のアニメーションだけ。）
   const startIdlePulse = contextSafe((pulseEl: HTMLElement | null) => {
     if (!pulseEl) return
     gsap.to(pulseEl, {
@@ -70,14 +75,25 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
     gsap.set(pulseEl, { scale: 1, opacity: 0 })
   })
 
-  const moveCursorBand = contextSafe(
-    (
-      bandEl: HTMLElement | null,
-      itemEl: HTMLElement | null,
-      listEl: HTMLElement | null,
-      reducedMotion: boolean,
-      mode: 'instant' | 'reveal' | 'glide',
-    ) => {
+  // contextSafe()は毎レンダー新しい関数を返すため、このeffectは
+  // レンダーのたびに再実行され、明滅もそのたびに最初からやり直しになる
+  // （リファクタ前からの挙動。docs/architecture.mdの既知の課題を参照）。
+  useEffect(() => {
+    const pulseEl = bandPulseRef.current
+    if (!idlePulseActive) {
+      stopIdlePulse(pulseEl)
+      return
+    }
+    startIdlePulse(pulseEl)
+    return () => {
+      stopIdlePulse(pulseEl)
+    }
+  }, [idlePulseActive, startIdlePulse, stopIdlePulse])
+
+  const moveBand = contextSafe(
+    (itemEl: HTMLElement | null, reducedMotion: boolean, mode: BandMove) => {
+      const bandEl = bandRef.current
+      const listEl = listWrapRef.current
       if (!bandEl || !itemEl || !listEl) return
       const top = offsetTopWithin(itemEl, listEl)
       const height = itemEl.offsetHeight
@@ -108,41 +124,74 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
     },
   )
 
-  const revealItems = contextSafe((itemEls: HTMLElement[], reducedMotion: boolean) => {
-    if (itemEls.length === 0) return
-    if (reducedMotion) {
-      gsap.set(itemEls, { opacity: 1, clipPath: 'inset(0 0 0 0)', x: 0 })
-      return
+  /** 新しい6つを順に表示し、bandを先頭行に置く。 */
+  const revealList = contextSafe((reducedMotion: boolean) => {
+    const itemEls = itemElsRef.current.filter((el): el is HTMLButtonElement => el !== null)
+    if (itemEls.length > 0) {
+      if (reducedMotion) {
+        gsap.set(itemEls, { opacity: 1, clipPath: 'inset(0 0 0 0)', x: 0 })
+      } else {
+        gsap.fromTo(
+          itemEls,
+          { opacity: 0, clipPath: 'inset(0 100% 0 0)', x: -8 },
+          {
+            opacity: 1,
+            clipPath: 'inset(0 0% 0 0)',
+            x: 0,
+            duration: 0.4,
+            ease: 'power2.out',
+            stagger: 0.045,
+          },
+        )
+      }
     }
-    gsap.fromTo(
-      itemEls,
-      { opacity: 0, clipPath: 'inset(0 100% 0 0)', x: -8 },
-      {
-        opacity: 1,
-        clipPath: 'inset(0 0% 0 0)',
-        x: 0,
-        duration: 0.4,
-        ease: 'power2.out',
-        stagger: 0.045,
-      },
-    )
+    moveBand(itemEls[0] ?? null, reducedMotion, 'reveal')
+    // revealのバウンスイン（約0.46秒）の途中で、リサイズ同期のgsap.set()が
+    // それを上書きしないよう、この間はobserveListResizeの通知を止める。
+    if (!reducedMotion) {
+      revealInFlightRef.current = true
+      window.setTimeout(() => {
+        revealInFlightRef.current = false
+      }, 500)
+    }
   })
 
-  // 確定タップのバウンスであり、縮小ではない: 行の名前/説明はこの要素の
-  // 上に別レイヤーとして乗っており、band自体が等倍で背後にあることで
-  // 初めて（淡色テキストとして）読める状態になる——高さ55%への縮小
-  // squeezeは、bandをテキスト自身の上下端から引き離してしまい、
-  // tweenの約90msの間、淡色テキストがページの明るい背景に直接露出して
-  // 読めなくなる。opacityを1のまま保っているのも同じ理由——ここで
-  // 落とすと、scaleの修正が守っているのと同じコントラストを損なう。
-  //
-  // ポップの前に小さく0.98まで沈み込む予備動作（duration 0.05秒）を
-  // 入れることで、「押し込んでから跳ね上がる」感触を出している——
-  // 単純な拡大ではなく圧縮してから解放する動き。以前の0.55の
-  // squeezeとは程遠い: 0.98で50msなら露出する隙間はサブピクセルで
-  // 知覚できず、「押した感触」と「テキストの可読性を一切損なわない」の
-  // 間での意図的なトレードオフ。
-  const squeezeBand = contextSafe((bandEl: HTMLElement | null, reducedMotion: boolean) => {
+  const glideBandTo = (index: number, reducedMotion: boolean) =>
+    moveBand(itemElsRef.current[index], reducedMotion, 'glide')
+
+  const snapBandTo = (index: number) => moveBand(itemElsRef.current[index], true, 'instant')
+
+  const focusItem = (index: number) => itemElsRef.current[index]?.focus()
+
+  /**
+   * 一覧の高さが変わったときに`onResize`を呼ぶ。bandの位置は計測した瞬間の
+   * 行の高さで決まるため、ウィンドウのリサイズで説明文の折り返しが
+   * 変わると、そのままではずれてしまう。戻り値で購読を解除する。
+   */
+  const observeListResize = (onResize: () => void): (() => void) | undefined => {
+    const listWrap = listWrapRef.current
+    if (!listWrap) return undefined
+    // ResizeObserverはobserve()直後に現在のサイズで必ず1回発火する。
+    // その時点ではrevealがbandを正しく置いた直後なので、最初の1回は無視する。
+    let isFirstCallback = true
+    const ro = new ResizeObserver(() => {
+      if (isFirstCallback) {
+        isFirstCallback = false
+        return
+      }
+      if (revealInFlightRef.current) return
+      onResize()
+    })
+    ro.observe(listWrap)
+    return () => ro.disconnect()
+  }
+
+  // 確定時のbandのバウンス。縮めるのではなく、0.98へ一瞬沈んでから
+  // 1.05へ跳ね返す。行の文字（淡色）はbandの上に乗っており、bandが
+  // 文字の上下端から離れると明るい背景に直接のって読めなくなるため、
+  // 沈み込みは知覚できない程度に留め、opacityも1のまま保つ。
+  const squeezeBand = contextSafe((reducedMotion: boolean) => {
+    const bandEl = bandRef.current
     if (!bandEl) return
     if (reducedMotion) return
     gsap
@@ -153,25 +202,18 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
   })
 
   /**
-   * `fromEl`の複製を`targetEl`の中心へ飛ばし、「攻撃の軌跡」として
-   * 尾を引く線を伴わせ、着弾時に破片を数個弾けさせる。（後片付けの
-   * バーストではなく）飛翔自体が着地した時点でresolveするので、
-   * 呼び出し側はonImpact / onAttackCompleteを正しいタイミングで
-   * 発火できる。
+   * `fromEl`の複製を`targetEl`の中心へ飛ばし、尾を引く線と着弾時の
+   * 破片を添える。飛翔自体が着地した時点でonImpact→onLandedを呼ぶ
+   * （後片付けのバーストの終了は待たない）。
    */
   const playAttackFlight = contextSafe(
-    (opts: {
-      // 行全体ではなく技自身のアイコン（CommandMenu.tsxのiconElsRef）—
-      // 行全体を飛ばすと「コマンドそのものがメニューから出ていく」ように
-      // 読めてしまうが、本来やりたいのは技をタ・イクツへ発射すること。
-      fromEl: SVGSVGElement
-      targetEl: HTMLElement | null
-      fxLayer: HTMLElement
-      reducedMotion: boolean
-      onImpact: () => void
-      onLanded: () => void
-    }) => {
-      const { fromEl, targetEl, fxLayer, reducedMotion, onImpact, onLanded } = opts
+    (
+      fromEl: SVGSVGElement,
+      fxLayer: HTMLElement,
+      targetEl: HTMLElement | null,
+      reducedMotion: boolean,
+      { onImpact, onLanded }: AttackFlightCallbacks,
+    ) => {
       const seq = (flightSeqRef.current += 1)
 
       const fromRect = fromEl.getBoundingClientRect()
@@ -209,14 +251,12 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
       projectile.style.width = `${fromRect.width}px`
       projectile.style.height = `${fromRect.height}px`
       projectile.style.margin = '0'
-      // アイコンは置かれている場所のcurrentColorを継承する——行が選択中
-      // （黒いband上）なら白になる。ページ自身の明るい背景を横切って
-      // 飛ぶ間も見えるよう、行の状態に関わらずここで濃い色に固定している。
+      // アイコンは行の状態によって白（選択中の黒いband上）になるため、
+      // 明るい背景を横切って飛ぶ間も見えるよう濃い色に固定する。
       projectile.style.color = 'var(--color-ink)'
       fxLayer.appendChild(projectile)
-      // 15pxのアイコンはページを横切って飛ぶ間は小さすぎて見えない —
-      // 自然な行内サイズのままにせず、出現時に拡大し（下で着弾に向けて
-      // 縮小していく）読めるようにしている。
+      // 行内の15pxのままでは飛んでいる間に見えないため、出現時に拡大し、
+      // 着弾に向けて縮めていく。
       gsap.set(projectile, { scale: 2.2, transformOrigin: '50% 50%' })
 
       const trail = document.createElement('div')
@@ -258,13 +298,54 @@ export function useCommandMenuAnimation(scopeRef: RefObject<HTMLElement | null>)
     },
   )
 
+  /**
+   * `index`行の攻撃演出: bandのバウンスの後、その行の技アイコンを
+   * `targetRef`の要素へ飛ばす。アイコンかfxレイヤーが見つからない場合は
+   * 飛翔も着弾も起こさず、onLandedだけを即座に呼ぶ。
+   */
+  const playAttack = contextSafe(
+    (
+      index: number,
+      targetRef: RefObject<HTMLElement | null>,
+      reducedMotion: boolean,
+      callbacks: AttackFlightCallbacks,
+    ) => {
+      squeezeBand(reducedMotion)
+
+      const fromEl = iconElsRef.current[index]
+      const fxLayer = fxLayerRef.current
+      if (!fromEl || !fxLayer) {
+        callbacks.onLanded()
+        return
+      }
+
+      // バウンスと飛翔を同時に始めると1つの動きに融合して見え、「確定して
+      // から技が発動する」と読めなくなるため、少し間を置く。reduced motion
+      // では飛翔が即座に完了するので、待たせる意味がない。
+      const launchFlight = () =>
+        playAttackFlight(fromEl, fxLayer, targetRef.current, reducedMotion, callbacks)
+      if (reducedMotion) {
+        launchFlight()
+      } else {
+        window.setTimeout(launchFlight, 90)
+      }
+    },
+  )
+
   return {
-    moveCursorBand,
-    revealItems,
-    squeezeBand,
-    playAttackFlight,
-    startIdlePulse,
-    stopIdlePulse,
+    rootRef,
+    listWrapRef,
+    bandRef,
+    bandPulseRef,
+    fxLayerRef,
+    itemElsRef,
+    iconElsRef,
+    revealList,
+    glideBandTo,
+    snapBandTo,
+    focusItem,
+    observeListResize,
+    playAttack,
   }
 }
 

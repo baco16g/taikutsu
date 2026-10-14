@@ -90,7 +90,7 @@
 
 /* アイドル時の明滅——別の疑似要素ではなく実際の子要素にしているのは、
    GSAPが.bandに起きる他の全てとは独立してアニメーションさせるための
-   自前のDOMノードを必要とするため（CommandMenu.tsxのbandPulseRef
+   自前のDOMノードを必要とするため（useCommandMenuAnimationのbandPulseRef
    参照）。::beforeと同じ形で、そのすぐ背後（z-index 0 < 1）に座り、
    塗りのbandが常にテキストを覆う最前面にとどまるようにしている。
    GSAPがopacityを0から、scaleを1から上げていくので、静止時は不可視で、
@@ -211,7 +211,7 @@
    必要な行数だけ折り返す。行は固定heightではなくmin-heightを使って
    いるので、2〜3行の説明文もレイアウトを壊さずその行自身が伸びる
    だけで済む。共有のカーソルbandは移動のたびに各行の実際の
-   offsetHeightを読み直す（useCommandMenuAnimationのmoveCursorBand）ので、
+   offsetHeightを読み直す（useCommandMenuAnimationのmoveBand）ので、
    行がどんな高さに落ち着こうとも、こちら側で何も変更せずに既に
    追従する。 */
 .desc {

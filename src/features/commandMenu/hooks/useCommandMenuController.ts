@@ -61,3 +61,5 @@ export function useCommandMenuController() {
     commitAttack,
   }
 }
+
+export type CommandMenuController = ReturnType<typeof useCommandMenuController>

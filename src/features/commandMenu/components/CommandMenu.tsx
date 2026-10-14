@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from 'react'
+import type { RefObject } from 'react'
 import clsx from 'clsx'
 import { ArrowUpRightIcon } from '@phosphor-icons/react'
 import { useCommandMenuController } from '../hooks/useCommandMenuController'
@@ -24,31 +24,11 @@ export function CommandMenu({
   reducedMotion,
   onImpact,
 }: CommandMenuProps) {
-  const { status, currentMoves, attackCount, reroll, commitAttack } = useCommandMenuController()
+  const controller = useCommandMenuController()
+  const { status, currentMoves, reroll } = controller
   const sound = useCommandSound(soundEnabled)
   const supportsHover = useSupportsHover()
-
-  const rootRef = useRef<HTMLDivElement>(null)
-  const listWrapRef = useRef<HTMLDivElement>(null)
-  const bandRef = useRef<HTMLDivElement>(null)
-  // .band専用の、アイドル時の明滅（breathing pulse）を担う子要素。
-  // useCommandMenuAnimationのstartIdlePulse/stopIdlePulseが解説している通り、
-  // bandRef自体への追加tweenにはできない（glide/reveal/squeezeは
-  // overwrite:'auto'でbandRef自身のtransformを動かすため、このループと
-  // 衝突して毎回サイレントに止まってしまう）。
-  const bandPulseRef = useRef<HTMLDivElement>(null)
-  const fxLayerRef = useRef<HTMLDivElement>(null)
-  const itemElsRef = useRef<(HTMLButtonElement | null)[]>([])
-  // confirm時に実際に飛ぶのは行全体ではなく技アイコン単体。
-  // playAttackFlightが行全体ではなくアイコンのSVGだけを複製できるよう、
-  // itemElsRefとは別に保持している。
-  const iconElsRef = useRef<(SVGSVGElement | null)[]>([])
-
-  const anim = useCommandMenuAnimation(rootRef)
-
-  // カーソル移動・攻撃確定・band再同期といったユーザー操作の状態機械は
-  // useCommandMenuInteractionに分離している——このコンポーネント自身が
-  // 持つのはJSXの描画と、それが要求するDOM ref自体の所有のみ。
+  const anim = useCommandMenuAnimation({ idlePulseActive: status === 'active' && !reducedMotion })
   const {
     cursorIndex,
     isAttacking,
@@ -57,26 +37,17 @@ export function CommandMenu({
     handleListKeyDown,
     handleListPointerMove,
   } = useCommandMenuInteraction({
-    status,
-    currentMoves,
-    attackCount,
-    reducedMotion,
-    supportsHover,
+    controller,
     anim,
     sound,
-    onImpact,
+    reducedMotion,
+    supportsHover,
     targetRef,
-    commitAttack,
-    bandRef,
-    bandPulseRef,
-    listWrapRef,
-    itemElsRef,
-    iconElsRef,
-    fxLayerRef,
+    onImpact,
   })
 
   return (
-    <div className={clsx(styles.root, isAttacking && styles.isAttacking)} ref={rootRef}>
+    <div className={clsx(styles.root, isAttacking && styles.isAttacking)} ref={anim.rootRef}>
       {/* ここに攻撃回数の表示はない — タ・イクツ自身のHPゲージ
           （BattleStatus）が「残り何回の攻撃か」を示す唯一の場所。 */}
       <header className={styles.zoneHeader}>
@@ -89,14 +60,14 @@ export function CommandMenu({
           実在の6つがある）。以下の各ハンドラは全てstatus !== 'active'で
           no-opになるので、最後の6つを残すのは見た目上の演出に過ぎず、
           新たに操作可能な死んだUIが残るわけではない。 */}
-      <div className={styles.listWrap} ref={listWrapRef}>
+      <div className={styles.listWrap} ref={anim.listWrapRef}>
         {/* 破れた紙のようなギザギザのband（clip-pathのpolygon）—
             行自体の左右端からはみ出して描画される。行ごとに1枚ではなく、
             GSAPで行間をグライドする共有要素1枚。 */}
-        <div className={styles.band} ref={bandRef} aria-hidden="true">
-          {/* アイドル時の明滅 — band自体とは別のGSAPターゲット。詳細は
-              上のbandPulseRefのコメント参照。 */}
-          <div className={styles.bandPulse} ref={bandPulseRef} />
+        <div className={styles.band} ref={anim.bandRef} aria-hidden="true">
+          {/* アイドル時の明滅。band自体とは別のGSAPターゲットにしている理由は
+              useCommandMenuAnimationのbandPulseRefを参照。 */}
+          <div className={styles.bandPulse} ref={anim.bandPulseRef} />
         </div>
 
         <ul
@@ -114,7 +85,7 @@ export function CommandMenu({
                 <button
                   type="button"
                   ref={(el) => {
-                    itemElsRef.current[i] = el
+                    anim.itemElsRef.current[i] = el
                   }}
                   className={clsx(styles.cmd, isActive && styles.isActive)}
                   tabIndex={isActive ? 0 : -1}
@@ -129,7 +100,7 @@ export function CommandMenu({
                   </span>
                   <MoveIcon
                     ref={(el) => {
-                      iconElsRef.current[i] = el
+                      anim.iconElsRef.current[i] = el
                     }}
                     className={styles.icon}
                     size={15}
@@ -164,7 +135,7 @@ export function CommandMenu({
         </button>
       </div>
 
-      <div className={styles.fxLayer} ref={fxLayerRef} aria-hidden="true" />
+      <div className={styles.fxLayer} ref={anim.fxLayerRef} aria-hidden="true" />
     </div>
   )
 }

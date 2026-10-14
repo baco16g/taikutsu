@@ -243,7 +243,7 @@
   clip-path: polygon(5% 0, 100% 0, 96% 100%, 0 100%);
   cursor: pointer;
   /* duration/easingはCommandMenu自身のカーソルbandのグライド
-     （useCommandMenuAnimationのmoveCursorBand: duration 0.38、
+     （useCommandMenuAnimationのmoveBand: duration 0.38、
      ease power3.out）に合わせてある——このボタンはホバー/フォーカス時に
      同じhookの「move」サウンドを再生するので、組み合わせる動きも同じ
      操作の言語として読めるようにしている。下のcubic-bezierはGSAPの
