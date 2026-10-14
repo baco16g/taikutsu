@@ -23,6 +23,38 @@
   position: static;
 }
 
+/* 横並びの戦闘画面では、スキル一覧（BattleScreenの.commandAnchor）を枠の中で
+   下寄せに置き、一覧が既定の高さに収まらないときは枠のほうを伸ばす。
+   説明文の折り返しで一覧が高くなる、幅のわりに背の低い画面（iPad miniの横向き
+   など）で、一覧が枠の上へはみ出さないようにするため。 */
+@container world-outer (min-width: 800px) {
+  .battleWorld {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: var(--world-default-height);
+    /* 上端は、既定の高さの枠を縦中央に置いたときの位置に固定し、伸びる分は
+       下へ伸ばす。縦中央のままだと、一覧の高さが変わるたびに枠全体
+       （タ・イクツや見出しも）が上下に動いてしまう。 */
+    margin-top: max(
+      0px,
+      (
+          100dvh - var(--outer-padding-top) - var(--outer-padding-bottom) -
+            var(--world-default-height)
+        ) /
+        2
+    );
+    margin-bottom: auto;
+  }
+
+  .battleWorld > .battleSection {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+}
+
 @container world-outer (max-width: 799px) {
   /* .galleryWorld自身の高さは既にauto（このブレークポイントの共有
      デフォルトと一致）だが、640pxのmin-heightフロアがモバイルの

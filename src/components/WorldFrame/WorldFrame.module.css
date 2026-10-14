@@ -1,6 +1,5 @@
 .page {
   display: flex;
-  align-items: center;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--color-page-background);
@@ -21,7 +20,9 @@
   flex-direction: column;
   align-items: center;
   background: var(--color-page-background);
-  padding: clamp(18px, 2.6vh, 30px) clamp(20px, 4vw, 64px) clamp(14px, 2.4vh, 24px);
+  --outer-padding-top: clamp(18px, 2.6vh, 30px);
+  --outer-padding-bottom: clamp(14px, 2.4vh, 24px);
+  padding: var(--outer-padding-top) clamp(20px, 4vw, 64px) var(--outer-padding-bottom);
   overflow-x: hidden;
   /* 下の横並び/スタック切り替え用の名前付きコンテナ。このコンポーネント
      自身のCSSと、同じ実コンテンツ幅でレイアウトを切り替える必要がある
@@ -62,8 +63,13 @@
      自身の実際の幅を基準にできる。 */
   width: min(92%, 1440px);
   max-width: 100%;
-  height: min(82vh, 880px);
-  min-height: 640px;
+  /* 画面の縦中央に置く（画面より高いときは上端から）。戦闘画面で枠が伸びる
+     ときの置き方はHomePage.module.cssの.battleWorldが上書きする。 */
+  margin-block: auto;
+  /* 画面の高さに合わせた既定の高さ。戦闘画面のレイアウト（HomePage.module.cssの
+     .battleWorld、BattleScreen.module.css）も、この値を基準に配置する。 */
+  --world-default-height: clamp(640px, 82vh, 880px);
+  height: var(--world-default-height);
 }
 
 /* ---------- World Decoration: フレームの線、紙の形、スクリーントーン、

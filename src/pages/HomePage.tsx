@@ -103,7 +103,13 @@ export function HomePage() {
       <WorldFrame
         worldContainerRef={intro.worldRef}
         decorationStrength={view.showIntro ? 'thin' : 'normal'}
-        className={view.showGallery ? styles.galleryWorld : undefined}
+        className={
+          view.showGallery
+            ? styles.galleryWorld
+            : view.showBattleSection
+              ? styles.battleWorld
+              : undefined
+        }
         note={view.showIntro ? '© OpenStreetMap contributors' : undefined}
         cornerExtra={
           <button
