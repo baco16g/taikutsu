@@ -56,9 +56,13 @@ export function useCommandMenuAnimation({ idlePulseActive }: { idlePulseActive: 
 
   const { contextSafe } = useGSAP({ scope: rootRef })
 
-  const startIdlePulse = contextSafe((pulseEl: HTMLElement | null) => {
-    if (!pulseEl) return
-    gsap.to(pulseEl, {
+  // 明滅は有効な間（攻撃を受け付けていて、動きを減らす設定がオフ）ずっと続け、
+  // カーソル移動などによる再レンダーでは途切れさせない。CSSでは不可視
+  // （opacity: 0）で、止めるときもその状態に戻す。
+  useEffect(() => {
+    const pulseEl = bandPulseRef.current
+    if (!idlePulseActive || !pulseEl) return
+    const pulse = gsap.to(pulseEl, {
       scale: 1.03,
       opacity: 0.35,
       duration: 1.1,
@@ -67,28 +71,11 @@ export function useCommandMenuAnimation({ idlePulseActive }: { idlePulseActive: 
       repeat: -1,
       transformOrigin: '50% 50%',
     })
-  })
-
-  const stopIdlePulse = contextSafe((pulseEl: HTMLElement | null) => {
-    if (!pulseEl) return
-    gsap.killTweensOf(pulseEl)
-    gsap.set(pulseEl, { scale: 1, opacity: 0 })
-  })
-
-  // contextSafe()は毎レンダー新しい関数を返すため、このeffectは
-  // レンダーのたびに再実行され、明滅もそのたびに最初からやり直しになる
-  // （リファクタ前からの挙動。docs/architecture.mdの既知の課題を参照）。
-  useEffect(() => {
-    const pulseEl = bandPulseRef.current
-    if (!idlePulseActive) {
-      stopIdlePulse(pulseEl)
-      return
-    }
-    startIdlePulse(pulseEl)
     return () => {
-      stopIdlePulse(pulseEl)
+      pulse.kill()
+      gsap.set(pulseEl, { scale: 1, opacity: 0 })
     }
-  }, [idlePulseActive, startIdlePulse, stopIdlePulse])
+  }, [idlePulseActive])
 
   const moveBand = contextSafe(
     (itemEl: HTMLElement | null, reducedMotion: boolean, mode: BandMove) => {
