@@ -10,6 +10,7 @@ interface RawRelatedMove {
 
 interface RawGame {
   id: string
+  thumbnail: { remoteUrl: string }
   relatedMoves: RawRelatedMove[]
 }
 
@@ -107,7 +108,7 @@ describe('recommendGames', () => {
     const [game] = recommendGames(DEFAULT_MOVE_IDS)
     const raw = RAW_GAMES.find((g) => g.id === game.id)
     expect(raw).toBeDefined()
-    expect(game.thumbnailSrc.startsWith('/thumbnails/')).toBe(true)
+    expect(game.thumbnailSrc).toBe(raw?.thumbnail.remoteUrl)
     expect(game.thumbnailAlt).toContain(game.name)
   })
 })

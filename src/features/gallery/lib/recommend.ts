@@ -57,7 +57,7 @@ interface RawGame {
   id: string
   name: string
   sourceUrl: string
-  thumbnail: { localFile: string }
+  thumbnail: { remoteUrl: string }
   catchphrase: string
   intro: string
   relatedMoves: RawRelatedMove[]
@@ -104,7 +104,7 @@ function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryG
     name: game.name,
     catchphrase: game.catchphrase,
     intro: game.intro,
-    thumbnailSrc: `${import.meta.env.BASE_URL}thumbnails/${game.thumbnail.localFile}`,
+    thumbnailSrc: game.thumbnail.remoteUrl,
     thumbnailAlt: `「${game.name}」のキービジュアル`,
     sourceUrl: game.sourceUrl,
     connections: buildConnections(game, chosenMoveIds),
