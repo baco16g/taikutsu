@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
 }
 
 .viewport {
@@ -195,7 +195,7 @@
 @media (max-width: 720px) {
   .root {
     --card-w: min(74vw, 320px);
-    gap: 8px;
+    gap: 4px;
   }
 
   .viewport {
