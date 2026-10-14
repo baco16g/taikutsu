@@ -34,6 +34,22 @@ export function GalleryCarousel({
   const lastAppliedRef = useRef<{ index: number; mobile: boolean } | null>(null)
   const [introPlaying, setIntroPlaying] = useState(true)
 
+  // 正面+隣接（ring<=1）の読み込みが出揃うまで、残りのカードはsrcを
+  // 与えない（詳しくはGalleryCard自身のコメント参照）。全て決着
+  // （成功/失敗問わず）した時点で残りの読み込みを解禁する——初回表示の
+  // 帯域を独占させず、かつユーザーが操作を始める頃には裏で温まっている
+  // ようにするため。マウント時点のring構成を基準にした一度きりの判定
+  // なので、以降のナビゲーションでカウントをやり直す必要はない。
+  const prioritySettledCountRef = useRef(0)
+  const priorityTotalRef = useRef(0)
+  const [restLoadEnabled, setRestLoadEnabled] = useState(false)
+  const handlePrioritySettled = () => {
+    prioritySettledCountRef.current += 1
+    if (prioritySettledCountRef.current >= priorityTotalRef.current) {
+      setRestLoadEnabled(true)
+    }
+  }
+
   const step = (direction: -1 | 1) =>
     onSelect((((selectedIndex + direction) % count) + count) % count)
 
@@ -54,6 +70,7 @@ export function GalleryCarousel({
   // タイムラインを完了前に巻き戻すため、onSettledは実際に生き残った
   // 方のパスからしか発火しない——2回発火することも0回になることもない。
   useEffect(() => {
+    priorityTotalRef.current = transforms.filter((t) => t.ring <= 1).length
     const cardEls = cardElsRef.current.filter((el): el is HTMLDivElement => el !== null)
     anim.initCards(cardEls)
     anim.playReveal(cardEls, transforms, reducedMotion, () => {
@@ -136,7 +153,7 @@ export function GalleryCarousel({
                         if (justDraggedRef.current || introPlaying) e.preventDefault()
                       }}
                     >
-                      <GalleryCard game={game} priority load />
+                      <GalleryCard game={game} priority load onSettled={handlePrioritySettled} />
                       <span className="sr-only">（販売ページを別タブで開きます）</span>
                     </a>
                   ) : (
@@ -146,7 +163,12 @@ export function GalleryCarousel({
                       tabIndex={t.reachable ? 0 : -1}
                       onClick={() => handleCardActivate(i)}
                     >
-                      <GalleryCard game={game} priority={false} load={t.ring <= 1} />
+                      <GalleryCard
+                        game={game}
+                        priority={false}
+                        load={t.ring <= 1 || restLoadEnabled}
+                        onSettled={t.ring <= 1 ? handlePrioritySettled : undefined}
+                      />
                     </button>
                   )}
                 </div>
@@ -200,10 +222,14 @@ function GalleryCard({
   game,
   priority,
   load,
+  onSettled,
 }: {
   game: GalleryGame
   priority: boolean
   load: boolean
+  /** 正面+隣接（ring<=1）のカードにのみ渡される。成功/失敗どちらでも
+   * 発火し、全員分揃った時点で呼び出し元が残りのカードのloadを解禁する。 */
+  onSettled?: () => void
 }) {
   return (
     <>
@@ -215,16 +241,19 @@ function GalleryCard({
         // カードまで一斉にフェッチされてしまう（GalleryGallery側で実測
         // 済み）。ブラウザの判定に頼らず、呼び出し元がring（中心からの
         // 距離）で「正面＋隣接1列」だけに絞ってsrcそのものを与えることで、
-        // 読み込み自体を確実に遅延させる——さらに奥のreachableなリング
-        // （PCの2列目など）は、実際にそこまでナビゲートされるまで待つ。
+        // 読み込み自体を確実に遅延させる。それらが出揃ったら
+        // onSettled経由で残り全カードのloadが解禁される（下のGalleryCarousel
+        // 側）ので、ユーザーが操作を始める頃には裏で読み込みが進んでいる。
         src={load ? game.thumbnailSrc : undefined}
         alt={game.thumbnailAlt}
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : 'low'}
         decoding="async"
         draggable={false}
+        onLoad={onSettled}
         onError={(e) => {
           e.currentTarget.classList.add(styles.isBroken)
+          onSettled?.()
         }}
       />
       <span className={styles.fallback} aria-hidden="true">
