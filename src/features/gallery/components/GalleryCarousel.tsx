@@ -48,8 +48,24 @@ export function GalleryCarousel({
     }
   }
 
+  // 正面のカードはリンク、それ以外はボタンとして描くため、切り替えるとフォーカス中の
+  // カードの要素が作り直されてフォーカスが外れる。カードにフォーカスがあったときは、
+  // 切り替えのあと新しい正面のカードへフォーカスを移す。
+  const centerLinkRef = useRef<HTMLAnchorElement>(null)
+  const refocusCenterRef = useRef(false)
+  const select = (index: number) => {
+    refocusCenterRef.current = trackRef.current?.contains(document.activeElement) ?? false
+    onSelect(index)
+  }
+
+  useEffect(() => {
+    if (!refocusCenterRef.current) return
+    refocusCenterRef.current = false
+    centerLinkRef.current?.focus({ preventScroll: true })
+  }, [selectedIndex])
+
   const step = (direction: -1 | 1) =>
-    onSelect((((selectedIndex + direction) % count) + count) % count)
+    select((((selectedIndex + direction) % count) + count) % count)
 
   const justDraggedRef = useGalleryDrag(trackRef, {
     disabled: introPlaying,
@@ -103,7 +119,7 @@ export function GalleryCarousel({
 
   const handleCardActivate = (i: number) => {
     if (justDraggedRef.current || introPlaying) return
-    onSelect(i)
+    select(i)
   }
 
   const current = games[selectedIndex]
@@ -143,6 +159,7 @@ export function GalleryCarousel({
                 <div className={styles.frame}>
                   {isCenter ? (
                     <a
+                      ref={centerLinkRef}
                       className={styles.link}
                       href={game.sourceUrl}
                       target="_blank"
