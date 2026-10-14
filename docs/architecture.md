@@ -289,5 +289,8 @@ sequenceDiagram
 - `HomePage.module.css` は `WorldFrame` より後に読み込みます。 `.galleryWorld` と `.battleWorld` は枠の高さと配置を上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
 - データの整合性を保ちます。 `relatedMoves` の `moveId` は `data/specialMoves.json` に存在する必要があります（ないと推薦時に例外）。各スキルの id には `src/features/commandMenu/data/moveIcons.tsx` のアイコンが必要です（ないと読み込み時に例外）。
 - 見出しの文言を変えたら、フォントのサブセットを作り直します（`src/index.css` のコメント参照）。
+- 補助的な小さい文字の色には `--color-ink-muted`（`src/styles/tokens.css`）を使います。紙色の背景でコントラスト比 4.5:1 以上を保つ値です。
+- 攻撃のあとスキル一覧の先頭の行へフォーカスを戻すのは、攻撃中のロックが解けて行のボタンが有効に戻ってからです（`useCommandMenuInteraction`）。無効なボタンにはフォーカスできません。
+- ギャラリーの正面のカードはリンク、それ以外のカードはボタンとして描くため、作品を切り替えるとカードの要素が作り直されます。カードにフォーカスがあった切り替えでは、`GalleryCarousel` が新しい正面のカードへフォーカスを移します。
 - 本番ビルドと `vite preview` のパスは `/taikutsu/` です（`vite.config.ts`）。ドキュメントサイトは `/taikutsu/docs/` です（`docs/.vitepress/config.ts`）。
 - `useGSAP` の `contextSafe()` は呼ぶたびに新しい関数を返します。 これに依存する effect は毎レンダー再実行されます（今はリサイズ時の帯の補正の購読がこれに当たります）。ループし続けるアニメーションは、この種の関数に依存させないでください。
