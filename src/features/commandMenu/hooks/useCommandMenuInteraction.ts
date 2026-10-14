@@ -51,6 +51,10 @@ export function useCommandMenuInteraction({
   // 追うのは「今プレビュー中の行」ではなく「同じ行が続けてタップされたか」
   // なので、cursorIndexとは別に持つ。
   const armedIndexRef = useRef<number | null>(null)
+  // 攻撃を確定したときにフォーカスが一覧の中にあったか。攻撃中は行のボタンが
+  // 無効になり、次の6つは新しい要素として描画されるので、そのままでは
+  // フォーカスが外れてキーボードで続けて選べなくなる。
+  const restoreFocusRef = useRef(false)
 
   // 表示中の6つが変わるたび（マウント・reroll・攻撃後の次ラウンド）、
   // カーソルは先頭に戻り新しい一覧がrevealする。statusも依存配列に
@@ -64,12 +68,23 @@ export function useCommandMenuInteraction({
       setCursorIndex(0)
       armedIndexRef.current = null
       anim.revealList(reducedMotion)
+    } else {
+      restoreFocusRef.current = false
     }
 
     isAttackingRef.current = false
     setIsAttacking(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMoves, status])
+
+  // 攻撃中のロックが解けて行のボタンが有効に戻ってから、フォーカスを先頭の行へ
+  // 戻す（無効なボタンにはフォーカスできない）。カーソルは上のeffectで先頭に
+  // 戻っているので、移動先のonFocusはプレビューの移動や効果音を起こさない。
+  useEffect(() => {
+    if (isAttacking || !restoreFocusRef.current) return
+    restoreFocusRef.current = false
+    anim.focusItem(0)
+  }, [isAttacking, anim])
 
   // ウィンドウのリサイズで行の高さが変わったら、bandを現在の行へ合わせ直す。
   useEffect(() => {
@@ -101,6 +116,7 @@ export function useCommandMenuInteraction({
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!move) return
 
+    restoreFocusRef.current = anim.listHasFocus()
     isAttackingRef.current = true
     setIsAttacking(true)
     setCursorIndex(i)

@@ -1,9 +1,38 @@
 import { createRef } from 'react'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installBrowserStubs } from '../../../test/browserStubs'
+import type { AttackFlightCallbacks } from '../hooks/useCommandMenuAnimation'
 import { ATTACK_LIMIT, VISIBLE_COUNT } from '../lib/moves'
 import { CommandMenu } from './CommandMenu'
+
+// deferAttacksをtrueにしたテストでは、攻撃の飛翔の完了をpendingAttackに預け、
+// テスト側で好きなときに完了させる。ブラウザと同じく「攻撃中（行は無効）」の
+// 状態が一度描画されてから次の6つに入れ替わる順序を再現するため。
+const attackControl: { deferAttacks: boolean; pendingAttack: AttackFlightCallbacks | null } = {
+  deferAttacks: false,
+  pendingAttack: null,
+}
+
+vi.mock('../hooks/useCommandMenuAnimation', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../hooks/useCommandMenuAnimation')>()
+  return {
+    ...original,
+    useCommandMenuAnimation: (options: Parameters<typeof original.useCommandMenuAnimation>[0]) => {
+      const anim = original.useCommandMenuAnimation(options)
+      return {
+        ...anim,
+        playAttack: (...args: Parameters<typeof anim.playAttack>) => {
+          if (!attackControl.deferAttacks) {
+            anim.playAttack(...args)
+            return
+          }
+          attackControl.pendingAttack = args[3]
+        },
+      }
+    },
+  }
+})
 
 // reducedMotion=trueでは攻撃の飛翔が同期的に完了するため、クリック1回で
 // 「確定→着弾→次の6つ」までが1回のact()の中で進む。
@@ -31,6 +60,8 @@ function skillName(button: HTMLElement) {
 }
 
 afterEach(() => {
+  attackControl.deferAttacks = false
+  attackControl.pendingAttack = null
   cleanup()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
@@ -77,6 +108,33 @@ describe('CommandMenu', () => {
 
     fireEvent.keyDown(list, { key: 'ArrowDown' })
     expect(document.activeElement).toBe(skillButtons()[0])
+  })
+
+  it('keeps keyboard focus in the list after an attack so the next skill can be chosen', () => {
+    const { onImpact } = renderMenu({ hover: true })
+    const list = screen.getByRole('list', { name: 'スキルコマンド' })
+    attackControl.deferAttacks = true
+    skillButtons()[0].focus()
+
+    // Enterキーでの確定は、フォーカス中のボタンのclickとして届く。
+    fireEvent.click(skillButtons()[0])
+    // 飛翔の間は行が無効になる。
+    expect(skillButtons()[0].hasAttribute('disabled')).toBe(true)
+
+    act(() => {
+      attackControl.pendingAttack?.onImpact()
+      attackControl.pendingAttack?.onLanded()
+    })
+    expect(onImpact).toHaveBeenCalledTimes(1)
+    // 新しい6つに入れ替わっても、フォーカスは一覧の先頭の行に戻る。
+    expect(document.activeElement).toBe(skillButtons()[0])
+
+    attackControl.deferAttacks = false
+
+    fireEvent.keyDown(list, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(skillButtons()[1])
+    fireEvent.click(skillButtons()[1])
+    expect(onImpact).toHaveBeenCalledTimes(2)
   })
 
   it('swaps all six skills on reroll without spending an attack', () => {

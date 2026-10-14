@@ -150,6 +150,8 @@ export function useCommandMenuAnimation({ idlePulseActive }: { idlePulseActive: 
 
   const focusItem = (index: number) => itemElsRef.current[index]?.focus()
 
+  const listHasFocus = () => listWrapRef.current?.contains(document.activeElement) ?? false
+
   /**
    * 一覧の高さが変わったときに`onResize`を呼ぶ。bandの位置は計測した瞬間の
    * 行の高さで決まるため、ウィンドウのリサイズで説明文の折り返しが
@@ -331,6 +333,7 @@ export function useCommandMenuAnimation({ idlePulseActive }: { idlePulseActive: 
     glideBandTo,
     snapBandTo,
     focusItem,
+    listHasFocus,
     observeListResize,
     playAttack,
   }
