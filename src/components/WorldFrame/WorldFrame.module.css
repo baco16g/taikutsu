@@ -80,11 +80,6 @@
 /* 薄くした装飾（decorationStrength="thin"）——画面自身の見出し/本文/
    ボタンこそが最も目立つべき画面向け。そうしなければフレーム自身の
    アクセントが注意を奪い合ってしまう。 */
-.worldDecoThin .horizon,
-.worldDecoThin .slashEcho {
-  display: none;
-}
-
 .worldDecoThin .slashMain {
   width: 130px;
   height: 80px;
@@ -246,25 +241,6 @@
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
-.slashEcho {
-  right: 0;
-  bottom: -21px;
-  height: 5px;
-  width: 180px;
-  transform: rotate(28deg);
-  transform-origin: right;
-}
-
-.horizon {
-  position: absolute;
-  top: 63%;
-  left: -12px;
-  width: 57%;
-  height: 1px;
-  transform: rotate(-7deg);
-  background: linear-gradient(to right, #c6c5bf, #deddd7 67%, transparent);
-}
-
 /* ---------- world note（左下） ---------- */
 
 .worldNote {
@@ -336,7 +312,6 @@
   .frameLeft::after,
   .frameRight,
   .frameBottom,
-  .horizon,
   .toneMedium {
     display: none;
   }
@@ -359,13 +334,6 @@
     bottom: -8px;
     width: 108px;
     height: 100px;
-  }
-
-  .slashEcho {
-    right: -6px;
-    bottom: -8px;
-    width: 140px;
-    transform: rotate(39deg);
   }
 
   .worldNote {

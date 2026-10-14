@@ -25,8 +25,6 @@ function WorldDecoration({ thin }: { thin: boolean }) {
       <div className={clsx(styles.tone, styles.toneMedium)} />
       <div className={clsx(styles.tone, styles.toneDense)} />
       <div className={clsx(styles.slash, styles.slashMain)} />
-      <div className={clsx(styles.slash, styles.slashEcho)} />
-      <div className={styles.horizon} />
     </div>
   )
 }
@@ -40,7 +38,7 @@ export interface WorldFrameProps {
   note?: ReactNode
   /** <main>の外側、ビューポートに固定して描画される——例: サウンドトグル。 */
   cornerExtra?: ReactNode
-  /** 自分自身のコンテンツこそが最も目立つべき画面向けに、共通の枠装飾を控えめにする（horizonラインとechoのslashを隠し、mainのslashを縮小し、スクリーントーンの不透明度を下げる）。デフォルトは'normal'。 */
+  /** 自分自身のコンテンツこそが最も目立つべき画面向けに、共通の枠装飾を控えめにする（mainのslashを縮小し、スクリーントーンの不透明度を下げる）。デフォルトは'normal'。 */
   decorationStrength?: 'normal' | 'thin'
   /** World Container自体に付与する追加クラス。画面ごとのコンテンツ配置CSSが使うフック用（例: 中央寄せレイアウトか絶対配置レイアウトかで異なる最大幅・paddingを指定する等）。 */
   className?: string
