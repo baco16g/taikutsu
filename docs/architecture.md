@@ -157,12 +157,13 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 ## 7. 今後の変更で守るべき制約
 
 - タ・イクツは `HomePage` で1体だけ描画します。各画面は立ち位置の目印（`creatureDockRef`）だけを持ちます。画面の中で描画すると切り替えのたびに再マウントされ、呼吸の動きやテクスチャが途切れます。
-- 戦闘画面のセクションは `position: static` のままにします（[HomePage.module.css](../src/pages/HomePage.module.css) の `.battleSection`）。BattleScreen の各要素は World Container を基準に絶対配置され、`useIntroPhase` も同じ要素を基準に目印の位置を測っています。
+- 戦闘画面のセクションは `position: static` のままにします（[HomePage.module.css](../src/pages/HomePage.module.css) の `.battleSection`）。見出しと HP の列は World Container を基準に絶対配置され、`useIntroPhase` も同じ要素を基準に目印の位置を測っています。
+- 横並びの戦闘画面では、スキル一覧だけを通常の配置（下寄せ）にし、一覧が高いときは枠を下へ伸ばします（`.battleWorld` と [BattleScreen.module.css](../src/features/battle/components/BattleScreen.module.css) の `.commandAnchor`）。HP の列は枠の実際の高さではなく既定の高さ `--world-default-height`（[WorldFrame.module.css](../src/components/WorldFrame/WorldFrame.module.css)）を基準に置くので、枠が伸びてもタ・イクツは動きません。一覧を絶対配置に戻すと、背の低い画面で枠の上へはみ出します（9.5）。
 - `RevealTransition` の `onCovered` の中では、ギャラリーへの差し替えを `flushSync` で同期的に commit します。シートはこの呼び出しが戻った直後に外れ始めます。
 - 「5」という数はまとめて変えます。攻撃上限 `ATTACK_LIMIT`（[moves.ts](../src/features/commandMenu/lib/moves.ts)）、タ・イクツの形の段階 `HP_SHAPES`（[shapeStates.ts](../src/features/taikutsu/lib/shapeStates.ts)、HP5〜0）、推薦の strong-tie 枠 `STRONG_TIE_TARGET`（[recommend.ts](../src/features/gallery/lib/recommend.ts)）、イントロの文言「スキルを5つ選んで」（[introCopy.ts](../src/features/intro/data/introCopy.ts)）、ヒット音の5段階（[useCommandSound.ts](../src/features/commandMenu/hooks/useCommandSound.ts)）は連動しています。このうち `ATTACK_LIMIT` と `HP_SHAPES` の一致は [hpInvariant.test.ts](../src/features/battle/hpInvariant.test.ts) で確かめています。ほかの3つの一致はテストしていません。
 - 着弾が1つ増えるごとに `attack()` を1回呼びます。`attack()` は前の被弾の変形が再生中ならそれを最後まで進めるので、呼んだ回数だけ HP が1段階ずつ進みます（9.1）。
 - フォーカスの移動先の id（`intro-battle-title`、`gallery-heading-title`）と、スクロールを止める対象の目印 `data-scroll-root` は変えません。`HomePage` と `RevealTransition` が参照しています。
-- `HomePage.module.css` は `WorldFrame` より後に読み込みます。`.galleryWorld` は WorldFrame の枠の高さを上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
+- `HomePage.module.css` は `WorldFrame` より後に読み込みます。`.galleryWorld` と `.battleWorld` は WorldFrame の枠の高さと配置を上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
 - データの整合性を保ちます。`relatedMoves` の `moveId` は `specialMoves.json` に存在する必要があります（ないと推薦時に例外）。各スキルの id には [moveIcons.tsx](../src/features/commandMenu/data/moveIcons.tsx) のアイコンが必要です（ないと読み込み時に例外）。
 - 見出しの文言を変えたら、フォントのサブセットを作り直します（[src/index.css](../src/index.css) のコメント参照）。
 - 本番ビルドと `vite preview` のパスは `/taikutsu/` です（[vite.config.ts](../vite.config.ts)）。
@@ -195,7 +196,7 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 - 撃破後の待ち時間: 撃破の読み上げから画面遷移が始まるまでを3回ずつ測りました。変更前は 799〜815ms、変更後は 810〜819ms で、計測の粒度（約16ms）の範囲内です。
 - 連続攻撃: リファクタの時点では、9.1の不具合が変更前と変更後の両方で同じように再現することを確認しました（挙動を変えていないことの確認）。修正後の結果は9.1に記載しています。
 - コンソールの警告: リファクタの時点では、変更前と同じ（`AudioContext was not allowed to start` が2件、GSAP の `Invalid scope` が4件）でした。9.2の修正後は `Invalid scope` が出なくなり、`AudioContext` の2件だけです。
-- 9章の修正後も、通常の速さの通しフロー（デスクトップ、スマホ幅、動きを減らす設定）とレイアウトの比較は、変更前と一致しています。
+- 9章の修正後も、通常の速さの通しフロー（デスクトップ、スマホ幅、動きを減らす設定）は変更前と一致しています。レイアウトの比較（1440×900、390×844）では、見える要素の位置はすべて一致しています。違うのは、9.5 で配置の仕組みを変えた要素の `display`/`position` と `<main>` の箱の大きさ、9.6 で余白をなくした見えない読み上げ用要素の位置だけです。
 - 本番ビルド: `vite preview` で `/taikutsu/` から配信し、イントロからギャラリーまで進めること、コンソールにエラーが出ないこと、見出しフォントと背景画像が読み込まれることを確認しました。
 
 ### 8.3 確認できていないこと
@@ -206,11 +207,12 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 - 効果音が実際に鳴ること（ブラウザでの確認はサウンドをオフのまま行った）
 - GitHub Pages へデプロイした状態（ローカルでのビルドと `vite preview` までは確認）
 - ゲーム画像の読み込みに失敗したときの表示
+- 実機の iPad（Safari）での表示（iPad の画面サイズは Chromium で再現して確認）
 - 画面遷移の途中でのウィンドウサイズの変更、途中で動きを減らす設定を切り替えた場合
 
 ## 9. リファクタ後に直した不具合
 
-リファクタ（挙動を変えない整理）を終えた後、記録しておいた課題のうち次の4つを直しました。9.1と9.2はプレイヤーから見える挙動が変わります。
+リファクタ（挙動を変えない整理）を終えた後、記録しておいた課題と、その後に報告・発見した不具合を直しました。9.1、9.2、9.5、9.6 はプレイヤーから見える挙動が変わります。
 
 ### 9.1 素早い連続攻撃で撃破に進めなくなる
 
@@ -236,6 +238,18 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 
 - [recommend.test.ts](../src/features/gallery/lib/recommend.test.ts) の「別の組み合わせなら結果が変わる」テストが存在しないスキル id（C02・C08・C19）を含んでいたため、実在する id の組に置き換えました。id が実在することもテスト内で確かめます。
 - `ATTACK_LIMIT` とタ・イクツの HP 段階の数の一致を確かめるテスト（[hpInvariant.test.ts](../src/features/battle/hpInvariant.test.ts)）と、`HP_AFTER_HIT` のテストを追加しました。
+
+### 9.5 iPad mini など、幅のわりに背の低い画面でスキル一覧が枠の上へはみ出す
+
+- 症状【確認】: 横並びの戦闘画面で、スキル一覧の上端が枠の上の線を越えていました。1133×744（iPad mini 横向き）で18px、1024×768 で37px、1280×800 で3px です。リファクタ前のコードでも同じ値で起きていました。
+- 原因: 横並びのレイアウトでは、枠の高さは画面の高さで決まり（最低640px）、スキル一覧は枠の下端を基準にした絶対配置でした。枠の幅が1000px前後まで狭くなると説明文が2行に折り返し、一覧が630〜650pxになって枠に収まらなくなります。表示される6つの組み合わせによって、はみ出す量は変わります。
+- 修正: スキル一覧を通常の配置（下寄せ）に変え、既定の高さに収まらないときは枠のほうを伸ばすようにしました。伸びるときは枠の上端を固定し、下へだけ伸ばします。HP の列は既定の高さを基準に置きます。こうしないと、6つが入れ替わるたびに枠全体とタ・イクツが上下に動いてしまいます（修正の途中で、最大24px動くことを測って確認しました）。縦中央に置く仕組みは、`.page` の `align-items: center` から枠の `margin-block: auto` へ移しました。
+- 挙動の変化: 背の低い画面では、一覧が高い6つのときに枠が下へ伸び、ページが少しスクロールできるようになります（1133×744 で最大14px、1024×768 で最大21px）。1180×820 など、これまでぎりぎり収まっていた画面でも、一覧と枠の上端の間に約30pxの余白を取るため、枠がわずかに伸びます。
+- 検証【確認】: 1440×900 と 390×844 で、イントロ・戦闘の全要素の位置が修正前と一致しました（違うのは、枠を置く仕組みを変えた要素の `display`/`position` と `<main>` の箱の大きさだけ）。通常の速さの通しフローも一致しています。iPad の各サイズ（1133×744、1024×768、1180×820、1194×834、1366×1024、縦向き2種）では、一覧が枠の内側に収まり、「ほかのスキルを見る」を繰り返しても枠の上端とタ・イクツの位置が変わらないことを確認しました。
+
+### 9.6 ページが常に17px余分にスクロールできる
+
+ページ末尾の読み上げ用の要素（`.sr-only`）に `<p>` の既定の余白が残っていて、ページの下へ17pxはみ出していました。どの画面サイズでも、わずかにスクロールできる状態でした。`.sr-only` の余白をなくしました（[src/index.css](../src/index.css)）。【確認】
 
 ## 10. 残っている課題（直していない）
 
