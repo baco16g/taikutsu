@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
+import { ArrowClockwiseIcon } from '@phosphor-icons/react'
+import { useMediaQuery } from '../../../hooks/useMediaQuery'
 import { GalleryCarousel } from './GalleryCarousel'
 import { GameInfoPanel } from './GameInfoPanel'
 import { DEFAULT_CHOSEN_MOVES, recommendGames } from '../lib/recommend'
@@ -16,6 +18,8 @@ export interface GameGalleryProps {
    * 例えば手動テストなど）。
    */
   chosenMoves?: GalleryMove[]
+  /** 「もう一度たたかう」の選択を呼び出し元へ伝える。セッション全体のリセットは呼び出し元の責任。 */
+  onReplay: () => void
 }
 
 /**
@@ -24,9 +28,10 @@ export interface GameGalleryProps {
  * データはrecommend.tsのrecommendGames()から、プレイヤーが実際に
  * 選んだ技を元に計算される。
  */
-export function GameGallery({ reducedMotion, chosenMoves }: GameGalleryProps) {
+export function GameGallery({ reducedMotion, chosenMoves, onReplay }: GameGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [introSettled, setIntroSettled] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 720px)')
 
   const effectiveChosenMoves = chosenMoves ?? DEFAULT_CHOSEN_MOVES
   // 選んだ技の入力自体が変わったときだけ再計算する。カルーセルの
@@ -51,8 +56,9 @@ export function GameGallery({ reducedMotion, chosenMoves }: GameGalleryProps) {
           見つけにいこう！
         </h2>
         <p className={styles.sub}>
-          あなたが選んだ{effectiveChosenMoves.length}つのスキルから、{games.length}
-          作品を推薦しました。
+          あなたが選んだ{effectiveChosenMoves.length}つのスキルから、
+          {isMobile && <br />}
+          {games.length}作品を推薦しました。
         </p>
       </header>
 
@@ -65,6 +71,11 @@ export function GameGallery({ reducedMotion, chosenMoves }: GameGalleryProps) {
       />
 
       <GameInfoPanel game={game} reducedMotion={reducedMotion} introSettled={introSettled} />
+
+      <button type="button" className={styles.replay} onClick={onReplay}>
+        もう一度たたかう
+        <ArrowClockwiseIcon size={16} weight="bold" aria-hidden="true" />
+      </button>
     </section>
   )
 }

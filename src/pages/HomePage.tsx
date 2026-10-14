@@ -107,6 +107,17 @@ export function HomePage() {
 
   const intro = useIntroPhase({ reducedMotion, onArrived: handleArrived })
 
+  const handleReplay = () => {
+    creatureRef.current?.reset()
+    chosenMovesRef.current = []
+    setImpactCount(0)
+    setDefeated(false)
+    defeatHandledRef.current = false
+    setShowGallery(false)
+    setAnnouncement('')
+    intro.resetIntro()
+  }
+
   // 単純なクリーチャー・プレースホルダーコンポーネントなら内部で持つはずの
   // 「hitシグナル→attach()」の配線をここで手動で行っている——IntroActor
   // （そのようなプレースホルダーではない）がこのページの共有タ・イクツ
@@ -268,6 +279,7 @@ export function HomePage() {
               <GameGallery
                 reducedMotion={reducedMotion}
                 chosenMoves={chosenMovesRef.current.length > 0 ? chosenMovesRef.current : undefined}
+                onReplay={handleReplay}
               />
             )}
           </section>
