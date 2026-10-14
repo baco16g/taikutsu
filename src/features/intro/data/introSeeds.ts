@@ -1,11 +1,7 @@
-import { mulberry32 } from '../../../lib/prng'
-
 export interface IntroSeed {
   /** アクター自身の箱に対する割合（0〜1）——revealマスクの`maskContentUnits="objectBoundingBox"`と対になる。 */
   x: number
   y: number
-  /** formation tween自身の進捗のうち、このシードが成長し始めるまでの割合（0〜1）。 */
-  delay: number
 }
 
 const SEED_COUNT = 18
@@ -22,18 +18,13 @@ export const MAX_SEED_RADIUS = 0.3
  * IntroActorのrevealマスク（円がここで成長する）とArrivalDustのcanvas
  * （パーティクルが同じ点へ向かって飛ぶ）の両方で共有される。これにより
  * dustが無関係な場所ではなく、目に見える形でマスクのブルームへ注ぎ込む
- * ように見える。src/features/taikutsu/lib/collapseHoles.tsと同じパターンで、
- * 固定シードを使いモジュールスコープで一度だけ計算する。
+ * ように見える。配置は乱数を使わない螺旋なので、毎回同じになる。
  */
-export const INTRO_SEEDS: IntroSeed[] = (() => {
-  const rand = mulberry32(2026)
-  return Array.from({ length: SEED_COUNT }, (_, i) => {
-    const angle = i * GOLDEN_ANGLE
-    const radius = Math.sqrt((i + 0.5) / SEED_COUNT) * MAX_RADIUS_FRAC
-    return {
-      x: 0.5 + Math.cos(angle) * radius,
-      y: 0.5 + Math.sin(angle) * radius,
-      delay: rand() * 0.25,
-    }
-  })
-})()
+export const INTRO_SEEDS: IntroSeed[] = Array.from({ length: SEED_COUNT }, (_, i) => {
+  const angle = i * GOLDEN_ANGLE
+  const radius = Math.sqrt((i + 0.5) / SEED_COUNT) * MAX_RADIUS_FRAC
+  return {
+    x: 0.5 + Math.cos(angle) * radius,
+    y: 0.5 + Math.sin(angle) * radius,
+  }
+})
