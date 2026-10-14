@@ -20,7 +20,7 @@ function freshState(): ControllerState {
 
 /**
  * 技プール/使用済み技の管理を担う: 27個中6個を常に画面に表示し、
- * 使用済みの技は二度と現れず、「ほかの技を見る」はまだ一度も表示して
+ * 使用済みの技は二度と現れず、「ほかのスキルを見る」はまだ一度も表示して
  * いない技を優先し、5回攻撃した時点でセッションが終わる。
  */
 export function useCommandMenuController() {
@@ -43,7 +43,7 @@ export function useCommandMenuController() {
     setState({ ...freshState(), currentMoves: first })
   }, [])
 
-  /** 「ほかの技を見る」: 攻撃を消費せずに表示中の6つを入れ替える。 */
+  /** 「ほかのスキルを見る」: 攻撃を消費せずに表示中の6つを入れ替える。 */
   const reroll = useCallback(() => {
     setState((prev) => {
       if (prev.status !== 'active') return prev

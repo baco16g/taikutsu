@@ -33,7 +33,7 @@ function shuffled<T>(items: T[]): T[] {
 /**
  * `pool`から次の`count`個の技を引く。`unseenIds`に含まれるid（これまで
  * 一度も表示されていない技）を優先し、未表示分が尽きたら既に見たが
- * 未使用の技にフォールバックする。`exclude`は「ほかの技を見る」のreroll
+ * 未使用の技にフォールバックする。`exclude`は「ほかのスキルを見る」のreroll
  * から現在表示中の6つを除外するために使う。
  */
 export function drawMoves(

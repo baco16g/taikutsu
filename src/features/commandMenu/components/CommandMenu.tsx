@@ -391,7 +391,7 @@ export function CommandMenu({ targetRef, soundEnabled, reducedMotion, events }: 
           onClick={reroll}
           disabled={isAttacking || status !== 'active'}
         >
-          ほかの技を見る
+          ほかのスキルを見る
         </button>
       </div>
 
