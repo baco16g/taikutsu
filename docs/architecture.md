@@ -1,6 +1,6 @@
 # 技術リファレンス
 
-コードレビュー用の資料です。アプリの構成、2026-10-14 のリファクタで何をなぜ変えたか、今後の変更で守るべき制約をまとめます。開発者以外の方向けの説明は [product-overview.md](product-overview.md) にあります。
+コードレビュー用の資料です。アプリの構成、2026-10-14 のリファクタで何をなぜ変えたか、その後に直した不具合、今後の変更で守るべき制約をまとめます。開発者以外の方向けの説明は [product-overview.md](product-overview.md) にあります。
 
 根拠の確かさを、次の印で書き分けています。
 
@@ -122,7 +122,7 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 1. スキルの行をクリックすると `useCommandMenuInteraction.confirmAttack` が呼ばれる（タッチ端末では同じ行の2回目のタップで呼ばれる）。入力を止め、攻撃音を鳴らす。
 2. `useCommandMenuAnimation.playAttack` が、選択帯のバウンス → 90ms 後にアイコンを約0.4秒かけて飛ばす。
 3. 着弾すると `onImpact(move)` が呼ばれ、`HomePage` の `landedMoves` に追加される。HP ゲージが減る。
-4. `landedMoves` の長さが増えたことを effect が検知し、`creatureRef.current.attack()` でタ・イクツの被弾を1段階進める。
+4. `landedMoves` の長さが増えたことを effect が検知し、`creatureRef.current.attack()` でタ・イクツの被弾を1段階進める。前の被弾の変形がまだ再生中なら、それを最後まで進めてから次を始める（9.1）。
 5. 着弾処理が終わると `onLanded` から `commitAttack` が呼ばれ、次の6つが並ぶ（5回目は並べずにメニューを終了状態にする）。
 6. 5回目の被弾でタ・イクツが崩れきると `onHpChange(0)` が呼ばれ、`stage` が `defeated` になる。
 7. 800ms 後（`DEFEAT_HOLD_MS`）に `covering` になり、`RevealTransition` がシートで画面を覆う。
@@ -148,7 +148,8 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 - イントロのフェーズと進行段階を1つの状態にまとめる: `useIntroPhase` のフェーズは GSAP のアニメーションと密に結びついています。まとめると書き直しになり、振る舞いを保つ確認の範囲が広がりすぎるため見送りました。
 - `useCommandMenuInteraction` をコンポーネントに戻す: CommandMenu が約300行に戻ります。そのため、ref の持ち主を振り付けの hook へ移す形を選びました。
 - リサイズ時の帯の補正やアイドル明滅を、攻撃中フラグごと振り付けの hook に移す: フラグを ref ではなく state で渡すことになり、攻撃開始直後の判定タイミングが変わるため、見送りました。
-- アイドル明滅がレンダーごとに再起動する問題を、関数の memo 化などで直す: 見た目の挙動が変わるため、今回は直さず既知の課題として記録しました（9.2）。
+- 連続攻撃の不具合（9.1）を、取りこぼした被弾を順番に再生して直す: タ・イクツの反応がアイコンの着弾より遅れて見えるため採りませんでした。変形が終わるまで次の攻撃を受け付けない方法も、CommandMenu にタ・イクツの状態を渡す必要があり、操作の待ち時間も増えるため採りませんでした。
+- 明滅の不具合（9.2）を、`useMemo` などで振り付けの関数を安定させて直す: 振り付けの hook 全体の作り方が変わるため、明滅の tween を effect の中で直接作る方法にしました。
 - 着弾時に effect を経由せず、その場でタ・イクツの `attack()` を呼ぶ: 被弾の開始が最大1フレーム早まり、挙動が変わります。effect による同期（React の状態に合わせて命令的なアニメーションを動かす）のまま残しました。
 - 推薦に `docs/research/gameMoveAssociations.json` を使う: このファイルの `confidence` は `relevance` から機械的に導かれており、`grounds` は根拠の引用文で、点数ではありません。同梱している全ゲームについて、strong/medium の組は `data/gameIntros.json` と一致します（差の約70件は、同梱していないゲームの分）。判断材料が増えないのに約644KB を配信することになるため、使っていません。以前はこの理由がコードのコメントに長く書かれていたため、ここへ移しました。
 - 見出しの小さな英字（`.eyebrowText`）の CSS を共有ファイルにする: 3行の宣言のために CSS Modules の境界をまたぐより、[IntroScreen.module.css](../src/features/intro/components/IntroScreen.module.css) と [BattleScreen.module.css](../src/features/battle/components/BattleScreen.module.css) に1つずつ持つ方が単純なので、そうしました。
@@ -158,14 +159,14 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 - タ・イクツは `HomePage` で1体だけ描画します。各画面は立ち位置の目印（`creatureDockRef`）だけを持ちます。画面の中で描画すると切り替えのたびに再マウントされ、呼吸の動きやテクスチャが途切れます。
 - 戦闘画面のセクションは `position: static` のままにします（[HomePage.module.css](../src/pages/HomePage.module.css) の `.battleSection`）。BattleScreen の各要素は World Container を基準に絶対配置され、`useIntroPhase` も同じ要素を基準に目印の位置を測っています。
 - `RevealTransition` の `onCovered` の中では、ギャラリーへの差し替えを `flushSync` で同期的に commit します。シートはこの呼び出しが戻った直後に外れ始めます。
-- 「5」という数はまとめて変えます。攻撃上限 `ATTACK_LIMIT`（[moves.ts](../src/features/commandMenu/lib/moves.ts)）、タ・イクツの形の段階 `HP_SHAPES`（[shapeStates.ts](../src/features/taikutsu/lib/shapeStates.ts)、HP5〜0）、推薦の strong-tie 枠 `STRONG_TIE_TARGET`（[recommend.ts](../src/features/gallery/lib/recommend.ts)）、イントロの文言「スキルを5つ選んで」（[introCopy.ts](../src/features/intro/data/introCopy.ts)）、ヒット音の5段階（[useCommandSound.ts](../src/features/commandMenu/hooks/useCommandSound.ts)）は連動しています。これをコードで強制する仕組みはありません。【提案】一致をテストで確かめることを勧めます。
-- 着弾が1つ増えるごとに `attack()` を1回呼びます。`attack()` は前の被弾の変形が終わるまで新しい被弾を受け付けません（9.1）。
+- 「5」という数はまとめて変えます。攻撃上限 `ATTACK_LIMIT`（[moves.ts](../src/features/commandMenu/lib/moves.ts)）、タ・イクツの形の段階 `HP_SHAPES`（[shapeStates.ts](../src/features/taikutsu/lib/shapeStates.ts)、HP5〜0）、推薦の strong-tie 枠 `STRONG_TIE_TARGET`（[recommend.ts](../src/features/gallery/lib/recommend.ts)）、イントロの文言「スキルを5つ選んで」（[introCopy.ts](../src/features/intro/data/introCopy.ts)）、ヒット音の5段階（[useCommandSound.ts](../src/features/commandMenu/hooks/useCommandSound.ts)）は連動しています。このうち `ATTACK_LIMIT` と `HP_SHAPES` の一致は [hpInvariant.test.ts](../src/features/battle/hpInvariant.test.ts) で確かめています。ほかの3つの一致はテストしていません。
+- 着弾が1つ増えるごとに `attack()` を1回呼びます。`attack()` は前の被弾の変形が再生中ならそれを最後まで進めるので、呼んだ回数だけ HP が1段階ずつ進みます（9.1）。
 - フォーカスの移動先の id（`intro-battle-title`、`gallery-heading-title`）と、スクロールを止める対象の目印 `data-scroll-root` は変えません。`HomePage` と `RevealTransition` が参照しています。
 - `HomePage.module.css` は `WorldFrame` より後に読み込みます。`.galleryWorld` は WorldFrame の枠の高さを上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
 - データの整合性を保ちます。`relatedMoves` の `moveId` は `specialMoves.json` に存在する必要があります（ないと推薦時に例外）。各スキルの id には [moveIcons.tsx](../src/features/commandMenu/data/moveIcons.tsx) のアイコンが必要です（ないと読み込み時に例外）。
 - 見出しの文言を変えたら、フォントのサブセットを作り直します（[src/index.css](../src/index.css) のコメント参照）。
 - 本番ビルドと `vite preview` のパスは `/taikutsu/` です（[vite.config.ts](../vite.config.ts)）。
-- `useGSAP` の `contextSafe()` は呼ぶたびに新しい関数を返します。これに依存する effect は毎レンダー再実行されます。
+- `useGSAP` の `contextSafe()` は呼ぶたびに新しい関数を返します。これに依存する effect は毎レンダー再実行されます（今はリサイズ時の帯の補正の購読がこれに当たります）。ループし続けるアニメーションは、この種の関数に依存させないでください（9.2）。
 
 ## 8. 検証
 
@@ -175,11 +176,11 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 | ---------------------- | ------------------------------------------------------------- | -------------------------------------------- |
 | `npm run lint`         | 成功                                                          | 成功                                         |
 | `tsc -b`（型チェック） | 成功                                                          | 成功                                         |
-| `npm test`             | 44件成功                                                      | 62件成功                                     |
+| `npm test`             | 44件成功                                                      | 65件成功（リファクタ時点では62件）           |
 | `npm run build`        | 成功（チャンク500kB超の警告あり。JS 1,133.15kB、CSS 25.93kB） | 成功（同じ警告。JS 1,132.65kB、CSS 26.07kB） |
 | `npm run format:check` | 成功                                                          | 成功                                         |
 
-追加したテストは次の3つです。
+リファクタの時点で追加したテストは次の3つです（9章の修正で追加したテストは9章に記載）。
 
 - [CommandMenu.test.tsx](../src/features/commandMenu/components/CommandMenu.test.tsx): ホバー端末は1クリックで攻撃、タッチ端末は同じ行の2回目のタップで攻撃、別の行へ移ると1回目の選択が解除される、矢印キーで先頭と末尾を行き来する、「ほかのスキルを見る」で攻撃回数を使わずに6つが入れ替わる、5回で入力を受け付けなくなる。リファクタの前に書き、変更前のコードで成功することを確かめてから変更しました。
 - [HomePage.test.tsx](../src/pages/HomePage.test.tsx): 動きを減らす設定で、イントロ→5回着弾でHPが減る→撃破の読み上げ→ギャラリーの表示と見出しへのフォーカス→再戦でイントロに戻る、までを実時間で通します。これもリファクタの前に書きました。
@@ -192,8 +193,9 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
   - 記録した値: 各時点のテキスト、読み上げ文、フォーカスの位置、HP、表示された技、推薦された10作品
 - レイアウトの比較: 画面上の全要素（SVG・canvas・aria-hidden の中を除く）について、位置、寸法、表示方法、フォント、色、z-index、aria 属性を記録しました。イントロ・戦闘・撃破・ギャラリーの4画面 × 2つの画面幅のすべてで、変更前と一致しました。
 - 撃破後の待ち時間: 撃破の読み上げから画面遷移が始まるまでを3回ずつ測りました。変更前は 799〜815ms、変更後は 810〜819ms で、計測の粒度（約16ms）の範囲内です。
-- 連続攻撃: 9.1の不具合は、変更前と変更後の両方で同じように再現しました（直していないことの確認）。
-- コンソールに出る警告（`AudioContext was not allowed to start` が2件、GSAP の `Invalid scope` が4件）は、変更前と同じです。
+- 連続攻撃: リファクタの時点では、9.1の不具合が変更前と変更後の両方で同じように再現することを確認しました（挙動を変えていないことの確認）。修正後の結果は9.1に記載しています。
+- コンソールの警告: リファクタの時点では、変更前と同じ（`AudioContext was not allowed to start` が2件、GSAP の `Invalid scope` が4件）でした。9.2の修正後は `Invalid scope` が出なくなり、`AudioContext` の2件だけです。
+- 9章の修正後も、通常の速さの通しフロー（デスクトップ、スマホ幅、動きを減らす設定）とレイアウトの比較は、変更前と一致しています。
 - 本番ビルド: `vite preview` で `/taikutsu/` から配信し、イントロからギャラリーまで進めること、コンソールにエラーが出ないこと、見出しフォントと背景画像が読み込まれることを確認しました。
 
 ### 8.3 確認できていないこと
@@ -206,31 +208,45 @@ HP の値は意図的に3つのタイミングで変わります。【確認】
 - ゲーム画像の読み込みに失敗したときの表示
 - 画面遷移の途中でのウィンドウサイズの変更、途中で動きを減らす設定を切り替えた場合
 
-## 9. 既知の課題（今回は直していない）
+## 9. リファクタ後に直した不具合
+
+リファクタ（挙動を変えない整理）を終えた後、記録しておいた課題のうち次の4つを直しました。9.1と9.2はプレイヤーから見える挙動が変わります。
 
 ### 9.1 素早い連続攻撃で撃破に進めなくなる
 
-- 再現【確認】: ボタンが再び押せるようになった瞬間に、プログラムから次の行をクリックし続けました（約0.5秒間隔）。HP は 0/5 になりますが、撃破もギャラリーへの移動も起きません。約1.3秒間隔で操作した場合は正常でした。
-- 原因【コード】: `TaikutsuCreature` の `attack()` は前の被弾の変形（約0.6秒）が終わるまで新しい被弾を無視します（[useCreatureAnimation.ts](../src/features/taikutsu/hooks/useCreatureAnimation.ts) の `attack` の冒頭）。無視された分は取り戻されないため、タ・イクツの形が HP0 に届かず、撃破の判定（`onHpChange(0)`）が来ません。
-- 人の手でこれが起きるには、次の一覧が表示され始めてから約0.1秒以内にクリックする必要があります。【推測】
-- 【提案】直し方は2通り考えられます。受け付けなかった被弾を順番に再生する方法と、変形が終わるまで次の攻撃を受け付けない方法です。どちらにするかは、ゲームとしてどう振る舞うべきかの判断が必要です。
+- 症状【確認】: ボタンが再び押せるようになった瞬間に、プログラムから次の行をクリックし続けると（約0.5秒間隔）、HP は 0/5 になるのに撃破もギャラリーへの移動も起きませんでした。約1.3秒間隔の操作では正常でした。
+- 原因【確認】: タ・イクツの `attack()` は、前の被弾の変形（約0.6秒）が再生中だと新しい被弾を捨てていました。捨てた分は取り戻されないため、タ・イクツの形が HP0 に届かず、撃破の判定（`onHpChange(0)`）が来ませんでした。
+- 修正: 再生中の変形を `timeline.progress(1)` で最後まで進め（完了時の処理もその場で走る）、それから次の被弾を始めるようにしました（[useCreatureAnimation.ts](../src/features/taikutsu/hooks/useCreatureAnimation.ts)）。次の HP はアニメーション側の値から対応表 `HP_AFTER_HIT` で決めます。`TaikutsuCreature` が React の state として二重に持っていた HP と、`(hp - 1) as Hp` の型アサーションはなくしました。
+- 挙動の変化: 連続攻撃のときは、前の被弾の変形が途中で最終形まで飛んでから、次の被弾が始まります。通常の速さの操作では変化はありません。
+- 検証: 変形の完了を待たずに5回着弾させても撃破に進むテストを [HomePage.test.tsx](../src/pages/HomePage.test.tsx) に追加しました（修正前のコードで失敗することを確認済み）。ブラウザでも、症状が出ていた操作で3回中3回とも撃破まで進みました。
 
-### 9.2 選択帯のアイドル明滅がレンダーのたびにやり直しになる
+### 9.2 選択帯のアイドル明滅が、カーソル移動のたびに最初からやり直しになる
 
-【コード】CommandMenu の `contextSafe()` が毎回新しい関数を返すため、明滅の effect が毎レンダー再実行されます。コメントの意図（一度開始したら続ける）とは食い違いますが、見た目への影響は目視で確かめていません。リファクタでは挙動を保つため、そのまま残しています。
+- 症状【確認】: 行から行へマウスを動かすたびに、明滅の不透明度が 0.2〜0.3 前後から 0 に戻っていました。元のコメントの意図（一度始めたら途切れさせない）と食い違っていました。
+- 原因: 明滅の effect が `contextSafe()` で包んだ関数に依存しており、その関数が毎レンダー新しく作られるため、再レンダーのたびに停止と再開を繰り返していました。
+- 修正: effect の中で tween を直接作り、有効・無効（攻撃を受け付けているか、動きを減らす設定か）が切り替わるときだけ開始・停止するようにしました（[useCommandMenuAnimation.ts](../src/features/commandMenu/hooks/useCommandMenuAnimation.ts)）。
+- 挙動の変化: カーソルを動かしても明滅が途切れません。
+- 検証: ブラウザで同じ計測をし、カーソル移動の前後で不透明度が自然な波のまま推移することを確認しました。あわせて、開発時の GSAP の `Invalid scope` 警告が出なくなりました。この警告は、`contextSafe` で包んだ停止処理が、アンマウント後（scope の ref が空の状態）に呼ばれたときに出ていたものです。
 
 ### 9.3 山札のシャッフルがレンダーのたびに実行される
 
-【コード】`useCommandMenuController` の `useRef(createShuffledPool())` は、レンダーのたびに山札をシャッフルします。結果は最初の1回分しか使われず、残りは捨てられます。実害は小さいものの、無駄な処理です。
+`useRef(createShuffledPool())` は初期値の式がレンダーのたびに評価され、使われないシャッフルが毎回走っていました。`useState` の遅延初期化に変え、マウント時に一度だけシャッフルするようにしました（[useCommandMenuController.ts](../src/features/commandMenu/hooks/useCommandMenuController.ts)）。表示される技や動作は変わりません（固定シードでのブラウザ検証で一致を確認）。
 
-### 9.4 推薦テストの一部が存在しないスキル id を使っている
+### 9.4 テストの修正と追加
 
-[recommend.test.ts](../src/features/gallery/lib/recommend.test.ts) の「別の組み合わせなら結果が変わる」テストは、存在しないスキル id（C02・C08・C19）を含む組み合わせを使っています。テストは通りますが、実質2つのスキルでしか確かめていません。
+- [recommend.test.ts](../src/features/gallery/lib/recommend.test.ts) の「別の組み合わせなら結果が変わる」テストが存在しないスキル id（C02・C08・C19）を含んでいたため、実在する id の組に置き換えました。id が実在することもテスト内で確かめます。
+- `ATTACK_LIMIT` とタ・イクツの HP 段階の数の一致を確かめるテスト（[hpInvariant.test.ts](../src/features/battle/hpInvariant.test.ts)）と、`HP_AFTER_HIT` のテストを追加しました。
 
-### 9.5 開発時のコンソールに GSAP の `Invalid scope` 警告が出る
+## 10. 残っている課題（直していない）
 
-【推測】`useGSAP` に渡す scope の ref が、最初のレンダーの時点ではまだ空であることが原因と考えられます。動作への影響は確認されていません。
+### 10.1 バンドルサイズの警告
 
-### 9.6 バンドルサイズの警告
+JS バンドルが約1.1MB（gzip 後で約340KB）あり、Vite が警告を出します。主な原因は同梱している `data/gameIntros.json`（約457KB）です。【推測】ギャラリーとそのデータを遅延読み込みにすれば最初の読み込みは軽くなります。ただし、撃破後にギャラリーを表示するときの通信と、それが失敗した場合の表示が新たに必要になります。挙動とリスクが増えるため、今回は直していません。
 
-JS バンドルが約1.1MB（gzip 後で約340KB）あり、Vite が警告を出します。主な原因は同梱している `data/gameIntros.json`（約457KB）です。【推測】
+### 10.2 `AudioContext` の警告
+
+Tone.js が読み込み時に AudioContext を作るため、ブラウザが「ユーザー操作の前には開始できない」という警告を2件出します。効果音は操作の後に `Tone.start()` で開始するので、動作には影響しません。【コード】警告をなくすには Tone.js 自体を遅延読み込みにする必要があり、読み込み方が変わるため直していません。
+
+### 10.3 リサイズ時の帯の補正の購読が毎レンダーやり直しになる
+
+`useCommandMenuInteraction` の ResizeObserver の effect は、振り付けの hook の戻り値（毎レンダー新しいオブジェクト）に依存しているため、再レンダーのたびに購読し直しています。ウィンドウのリサイズでは再レンダーが起きないため、帯の補正は機能しています。【コード】見た目への影響は確認されていないため、直していません。
