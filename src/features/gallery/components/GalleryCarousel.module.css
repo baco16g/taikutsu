@@ -120,6 +120,11 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  /* .viewportはカード本体より34%（モバイルは50%）背が高く、回転した
+     隣接カードが上下で欠けないための余白を確保している——そのため
+     見た目のカード下端とこの行の間には、.rootのgapだけでは説明できない
+     隙間がある。その余白の半分だけ引き上げて相殺する。 */
+  margin-top: calc(var(--card-h) * -0.17 + 20px);
 }
 
 .nav {
@@ -200,6 +205,10 @@
 
   .viewport {
     height: calc(var(--card-h) * 1.5);
+  }
+
+  .controls {
+    margin-top: calc(var(--card-h) * -0.25 + 16px);
   }
 
   .nav {

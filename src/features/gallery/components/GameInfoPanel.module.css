@@ -2,7 +2,9 @@
   position: relative;
   width: 100%;
   max-width: 640px;
-  margin: 0 auto;
+  /* GameGallery.module.cssの.root gapに上乗せして、カルーセルとの間を
+     ナビゲーション〜画像間より明確に広く取る。 */
+  margin: 24px auto 0;
   padding: 4px 20px 0;
   /* デフォルト/JS実行前の状態——GSAP（useGSAP）がreveal時にこれを1へ
      設定する。この要素にReact側からインラインの`style` propを絶対に
@@ -125,6 +127,7 @@
 
 @media (max-width: 720px) {
   .root {
+    margin-top: 16px;
     padding: 4px 18px 0;
   }
 
