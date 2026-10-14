@@ -39,6 +39,8 @@ export interface ResolvedSlideTransform {
   opacity: number
   zIndex: number
   reachable: boolean
+  /** 中心からの輪の距離（0=中心、1=隣接）。画像読み込みの優先度付けに使う——操作可能かどうかは`reachable`で別途判定する。 */
+  ring: number
 }
 
 /** `count`個でループする並びの中で、`selected`から`index`までの符号付き最短距離。 */
@@ -62,5 +64,6 @@ export function resolveSlideTransform(
     opacity: step.opacity,
     reachable: step.reachable,
     zIndex: 100 - ring * 10,
+    ring,
   }
 }

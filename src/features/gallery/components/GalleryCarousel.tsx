@@ -146,7 +146,7 @@ export function GalleryCarousel({
                       tabIndex={t.reachable ? 0 : -1}
                       onClick={() => handleCardActivate(i)}
                     >
-                      <GalleryCard game={game} priority={false} load={t.reachable} />
+                      <GalleryCard game={game} priority={false} load={t.ring <= 1} />
                     </button>
                   )}
                 </div>
@@ -213,9 +213,10 @@ function GalleryCard({
         // ため、その間はloading="lazy"のビューポート近接判定が全カードを
         // 「画面内」と誤判定してしまい、本来読み込むべきでない奥の
         // カードまで一斉にフェッチされてしまう（GalleryGallery側で実測
-        // 済み）。ブラウザの判定に頼らず、reachable（＝実際に見える/
-        // 隣接するカード）になった時だけsrcそのものを与えることで、
-        // 読み込み自体を確実に遅延させる。
+        // 済み）。ブラウザの判定に頼らず、呼び出し元がring（中心からの
+        // 距離）で「正面＋隣接1列」だけに絞ってsrcそのものを与えることで、
+        // 読み込み自体を確実に遅延させる——さらに奥のreachableなリング
+        // （PCの2列目など）は、実際にそこまでナビゲートされるまで待つ。
         src={load ? game.thumbnailSrc : undefined}
         alt={game.thumbnailAlt}
         loading={priority ? 'eager' : 'lazy'}
