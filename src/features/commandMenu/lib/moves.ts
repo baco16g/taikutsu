@@ -1,16 +1,9 @@
-import specialMovesData from '../../../../data/specialMoves.json'
+import { SPECIAL_MOVES } from '../../../catalog/specialMoves'
 import { MOVE_ICONS } from '../data/moveIcons'
 import type { MoveEntry } from '../types'
 
-/** data/specialMoves.jsonにおける技の生の形——アイコンが付与される前。 */
-export interface RawMove {
-  id: string
-  name: string
-  shortDescription: string
-}
-
-/** 配信されている27個の技（data/specialMoves.json）にアイコンを付与したもの。 */
-export const ALL_MOVES: MoveEntry[] = (specialMovesData.moves as RawMove[]).map((move) => {
+/** 同梱の全スキルにアイコンを付与したもの。 */
+export const ALL_MOVES: MoveEntry[] = SPECIAL_MOVES.map((move) => {
   const icon = MOVE_ICONS[move.id]
   // Recordのインデックスシグネチャはキーが実際には欠けている可能性を隠してしまう。
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

@@ -1,26 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import gameIntrosData from '../../../../data/gameIntros.json'
-import specialMovesData from '../../../../data/specialMoves.json'
+import { GAME_INTROS } from '../../../catalog/gameIntros'
+import { SPECIAL_MOVES_BY_ID } from '../../../catalog/specialMoves'
 import { DEFAULT_CHOSEN_MOVES, TOTAL_GAME_COUNT, recommendGames } from './recommend'
-
-interface RawRelatedMove {
-  moveId: string
-  relevance: 'strong' | 'medium'
-}
-
-interface RawGame {
-  id: string
-  thumbnail: { remoteUrl: string }
-  relatedMoves: RawRelatedMove[]
-}
-
-const RAW_GAMES = gameIntrosData.games as RawGame[]
-const MOVE_NAMES_BY_ID = new Map(specialMovesData.moves.map((m) => [m.id, m.name] as const))
 
 /** `moveId`にstrongで結びついている実際のゲームid。data/gameIntros.jsonそのまま——エンジンをバンドル済みデータそのものに対して検証するためで、別に手で用意した2つ目のfixtureではない。 */
 function gamesStronglyTiedTo(moveId: string): Set<string> {
   return new Set(
-    RAW_GAMES.filter((g) =>
+    GAME_INTROS.filter((g) =>
       g.relatedMoves.some((r) => r.relevance === 'strong' && r.moveId === moveId),
     ).map((g) => g.id),
   )
@@ -62,7 +48,7 @@ describe('recommendGames', () => {
         // ……生データ上でもこのまさにこのゲームと本当にstrong-tieである……
         expect(gamesStronglyTiedTo(connection.moveId).has(game.id)).toBe(true)
         // ……そして作り話ではなく、その技の実際のname/shortDescriptionを運んでいる。
-        expect(connection.moveName).toBe(MOVE_NAMES_BY_ID.get(connection.moveId))
+        expect(connection.moveName).toBe(SPECIAL_MOVES_BY_ID.get(connection.moveId)?.name)
       }
     }
   })
@@ -72,7 +58,7 @@ describe('recommendGames', () => {
     const discoveryPicks = games.filter((g) => g.connections.length === 0)
     const chosenSet = new Set(DEFAULT_MOVE_IDS)
     for (const game of discoveryPicks) {
-      const raw = RAW_GAMES.find((g) => g.id === game.id)
+      const raw = GAME_INTROS.find((g) => g.id === game.id)
       expect(raw).toBeDefined()
       const hasAnyStrongTieToChosen = raw?.relatedMoves.some(
         (r) => r.relevance === 'strong' && chosenSet.has(r.moveId),
@@ -106,7 +92,7 @@ describe('recommendGames', () => {
 
   it('builds each game from the real data/gameIntros.json fields', () => {
     const [game] = recommendGames(DEFAULT_MOVE_IDS)
-    const raw = RAW_GAMES.find((g) => g.id === game.id)
+    const raw = GAME_INTROS.find((g) => g.id === game.id)
     expect(raw).toBeDefined()
     expect(game.thumbnailSrc).toBe(`${raw?.thumbnail.remoteUrl}?sw=880`)
     expect(game.thumbnailAlt).toContain(game.name)

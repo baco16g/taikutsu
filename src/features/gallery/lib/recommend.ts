@@ -1,6 +1,5 @@
-import specialMovesData from '../../../../data/specialMoves.json'
-import gameIntrosData from '../../../../data/gameIntros.json'
-import type { RawMove } from '../../commandMenu/lib/moves'
+import { GAME_INTROS, type GameIntro } from '../../../catalog/gameIntros'
+import { SPECIAL_MOVES_BY_ID } from '../../../catalog/specialMoves'
 import { mulberry32 } from '../../../lib/prng'
 import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
 
@@ -46,27 +45,7 @@ import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
  * 左右し、クリックした「順番」は影響しない。
  */
 
-interface RawRelatedMove {
-  moveId: string
-  relevance: 'strong' | 'medium'
-}
-
-interface RawGame {
-  id: string
-  name: string
-  sourceUrl: string
-  thumbnail: { remoteUrl: string }
-  catchphrase: string
-  intro: string
-  relatedMoves: RawRelatedMove[]
-}
-
-const MOVES_BY_ID = new Map<string, RawMove>(
-  (specialMovesData.moves as RawMove[]).map((m) => [m.id, m]),
-)
-const GAMES_BY_ID = new Map<string, RawGame>(
-  (gameIntrosData.games as RawGame[]).map((g) => [g.id, g]),
-)
+const GAMES_BY_ID = new Map<string, GameIntro>(GAME_INTROS.map((g) => [g.id, g]))
 const ALL_GAME_IDS: string[] = Array.from(GAMES_BY_ID.keys())
 
 /** ギャラリーが常に表示するゲーム数 — GalleryCarousel側のaria-labelの件数は`games.length`経由でこれと同期しており、別途ハードコードされた数値ではない。 */
@@ -79,16 +58,19 @@ const STRONG_TIE_TARGET = 5
 const DEFAULT_CHOSEN_MOVE_IDS = ['C01', 'C13', 'C17', 'C21', 'C27']
 
 export const DEFAULT_CHOSEN_MOVES: GalleryMove[] = DEFAULT_CHOSEN_MOVE_IDS.map((id) => {
-  const move = MOVES_BY_ID.get(id)
+  const move = SPECIAL_MOVES_BY_ID.get(id)
   if (!move) throw new Error(`Unknown move id in DEFAULT_CHOSEN_MOVE_IDS: ${id}`)
   return { id: move.id, name: move.name }
 })
 
-function buildConnections(game: RawGame, chosenMoveIds: ReadonlySet<string>): GalleryConnection[] {
+function buildConnections(
+  game: GameIntro,
+  chosenMoveIds: ReadonlySet<string>,
+): GalleryConnection[] {
   return game.relatedMoves
     .filter((rel) => rel.relevance === 'strong' && chosenMoveIds.has(rel.moveId))
     .map((rel) => {
-      const move = MOVES_BY_ID.get(rel.moveId)
+      const move = SPECIAL_MOVES_BY_ID.get(rel.moveId)
       if (!move) throw new Error(`Unknown move id in relatedMoves: ${rel.moveId}`)
       return { moveId: move.id, moveName: move.name, experience: move.shortDescription }
     })
@@ -112,13 +94,13 @@ function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryG
   }
 }
 
-function hasStrongTie(game: RawGame, chosenMoveIds: ReadonlySet<string>): boolean {
+function hasStrongTie(game: GameIntro, chosenMoveIds: ReadonlySet<string>): boolean {
   return game.relatedMoves.some(
     (rel) => rel.relevance === 'strong' && chosenMoveIds.has(rel.moveId),
   )
 }
 
-function isStronglyTiedToMove(game: RawGame, moveId: string): boolean {
+function isStronglyTiedToMove(game: GameIntro, moveId: string): boolean {
   return game.relatedMoves.some((rel) => rel.relevance === 'strong' && rel.moveId === moveId)
 }
 
