@@ -24,7 +24,7 @@ GitHub Pages で公開しています。`main` ブランチへの push で [.git
 
 ## セットアップ
 
-GitHub Actions のビルドは Node.js 22 で実行しています。
+Node.js 24 系を使用します（[.nvmrc](./.nvmrc)）。GitHub Actions のビルドも同じバージョンで実行します。
 
 ```sh
 npm ci
