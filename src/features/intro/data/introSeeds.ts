@@ -1,4 +1,4 @@
-import { mulberry32 } from '../../taikutsu/lib/prng'
+import { mulberry32 } from '../../../lib/prng'
 
 export interface IntroSeed {
   /** アクター自身の箱に対する割合（0〜1）——revealマスクの`maskContentUnits="objectBoundingBox"`と対になる。 */

@@ -13,7 +13,7 @@ export interface BattleStatusProps {
   reducedMotion: boolean
 }
 
-/** 戦闘中のタ・イクツの名前/HP表示——`defeated`になるとフェードアウトする。直後にDefeatMessageが同じ場所を引き継ぐため。 */
+/** 戦闘中のタ・イクツの名前/HP表示——`defeated`になるとフェードアウトする。直後にDefeatDebrisが同じ場所を引き継ぐため。 */
 export function BattleStatus({
   creatureDockRef,
   creatureKicker,

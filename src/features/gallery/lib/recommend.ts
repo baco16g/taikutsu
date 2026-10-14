@@ -1,7 +1,7 @@
 import specialMovesData from '../../../../data/specialMoves.json'
 import gameIntrosData from '../../../../data/gameIntros.json'
 import type { RawMove } from '../../commandMenu/lib/moves'
-import { mulberry32 } from '../../taikutsu/lib/prng'
+import { mulberry32 } from '../../../lib/prng'
 import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
 
 /**
@@ -39,7 +39,7 @@ import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
  * discovery枠で単純に埋める——返却数は常にちょうど`TOTAL_GAME_COUNT`になる。
  *
  * 全体は選ばれた技id自体からシードする（本プロジェクト既存のPRNGである
- * src/features/taikutsu/lib/prng.tsのmulberry32経由）ため、同じ技の組み合わせは
+ * src/lib/prng.tsのmulberry32経由）ため、同じ技の組み合わせは
  * 常に同じギャラリーを再現し（テスト/スナップショット向けに決定的）、
  * 違う組み合わせでは表示されるゲームが変わる。シードは順序に依存しない
  * （idは重複排除とソートを先に行う）——選んだ技の「組み合わせ」が結果を

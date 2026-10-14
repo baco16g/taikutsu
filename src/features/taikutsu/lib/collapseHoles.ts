@@ -1,4 +1,4 @@
-import { mulberry32 } from './prng'
+import { mulberry32 } from '../../../lib/prng'
 import { CENTER } from './shapeStates'
 
 export interface CollapseHole {

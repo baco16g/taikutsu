@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import styles from './DefeatMessage.module.css'
+import styles from './DefeatDebris.module.css'
 
-export interface DefeatMessageProps {
+export interface DefeatDebrisProps {
   reducedMotion: boolean
 }
 
@@ -74,7 +74,7 @@ function DebrisField() {
  * 少し後にギャラリー画面自身の（より大きな）見出しが担う。ここで
  * 繰り返すと同じ文を2回読ませることになる。
  */
-export function DefeatMessage({ reducedMotion }: DefeatMessageProps) {
+export function DefeatDebris({ reducedMotion }: DefeatDebrisProps) {
   return (
     <div className={clsx(styles.root, reducedMotion && styles.isReducedMotion)}>
       <DebrisField />

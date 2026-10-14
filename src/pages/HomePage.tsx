@@ -12,8 +12,8 @@ import { useIntroPhase } from '../features/intro/hooks/useIntroPhase'
 import { INTRO_COPY } from '../features/intro/data/introCopy'
 import type { TaikutsuCreatureHandle } from '../features/taikutsu/components/TaikutsuCreature'
 import type { Hp } from '../features/taikutsu/lib/shapeStates'
-import { BattleStatus } from '../features/taikutsu/components/BattleStatus/BattleStatus'
-import { DefeatMessage } from '../features/reveal/components/DefeatMessage'
+import { BattleStatus } from '../features/battle/components/BattleStatus/BattleStatus'
+import { DefeatDebris } from '../features/battle/components/DefeatDebris'
 import { RevealTransition } from '../features/reveal/components/RevealTransition'
 import { GameGallery } from '../features/gallery/components/GameGallery'
 import type { GalleryMove } from '../features/gallery/types'
@@ -271,7 +271,7 @@ export function HomePage() {
                   />
                 </section>
 
-                {defeated && <DefeatMessage reducedMotion={reducedMotion} />}
+                {defeated && <DefeatDebris reducedMotion={reducedMotion} />}
               </>
             )}
 
