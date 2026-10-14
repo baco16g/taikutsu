@@ -40,19 +40,22 @@ export function useCommandMenuController() {
   }, [pool])
 
   /** `moveId`を使用済みにし、次の6つを並べる（5回攻撃した場合はセッションを終える）。 */
-  const commitAttack = useCallback((moveId: string) => {
-    usedIdsRef.current.add(moveId)
-    setState((prev) => {
-      const attackCount = prev.attackCount + 1
-      if (attackCount >= ATTACK_LIMIT) {
-        return { ...prev, status: 'complete', attackCount }
-      }
-      const available = pool.filter((m) => !usedIdsRef.current.has(m.id))
-      const next = drawMoves(available, unseenIdsRef.current, VISIBLE_COUNT)
-      next.forEach((m) => unseenIdsRef.current.delete(m.id))
-      return { ...prev, attackCount, currentMoves: next }
-    })
-  }, [pool])
+  const commitAttack = useCallback(
+    (moveId: string) => {
+      usedIdsRef.current.add(moveId)
+      setState((prev) => {
+        const attackCount = prev.attackCount + 1
+        if (attackCount >= ATTACK_LIMIT) {
+          return { ...prev, status: 'complete', attackCount }
+        }
+        const available = pool.filter((m) => !usedIdsRef.current.has(m.id))
+        const next = drawMoves(available, unseenIdsRef.current, VISIBLE_COUNT)
+        next.forEach((m) => unseenIdsRef.current.delete(m.id))
+        return { ...prev, attackCount, currentMoves: next }
+      })
+    },
+    [pool],
+  )
 
   return {
     status: state.status,
