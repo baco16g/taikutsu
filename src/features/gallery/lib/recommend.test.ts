@@ -86,8 +86,10 @@ describe('recommendGames', () => {
   })
 
   it('varies the gallery for a different chosen-move set', () => {
+    const otherMoveIds = ['C04', 'C05', 'C09', 'C24', 'C35']
+    for (const id of otherMoveIds) expect(SPECIAL_MOVES_BY_ID.has(id)).toBe(true)
     const a = recommendGames(DEFAULT_MOVE_IDS)
-    const b = recommendGames(['C02', 'C05', 'C08', 'C19', 'C24'])
+    const b = recommendGames(otherMoveIds)
     expect(b.map((g) => g.id)).not.toEqual(a.map((g) => g.id))
   })
 
