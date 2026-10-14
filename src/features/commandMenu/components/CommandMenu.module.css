@@ -381,9 +381,9 @@
   }
 
   .cmd {
-    min-height: 46px;
+    min-height: 58px;
     grid-template-columns: 17px 18px 1fr 15px;
-    padding: 5px 26px 5px 2px;
+    padding: 8px 26px 8px 2px;
     column-gap: 7px;
   }
 
