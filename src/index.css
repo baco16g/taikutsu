@@ -1,5 +1,18 @@
 @import './styles/tokens.css';
 
+/* Subsetted to the 8 characters the intro/battle headline actually uses
+   (退屈を、たおせ！) — see index.html's matching preload. Regenerate from
+   https://fonts.googleapis.com/css2?family=Dela+Gothic+One&text=<headline>
+   if that copy ever changes. */
+@font-face {
+  font-family: 'Dela Gothic One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dela-gothic-one-title.woff2') format('woff2');
+  unicode-range: U+3001, U+304a, U+305b, U+305f, U+3092, U+5c48, U+9000, U+ff01;
+}
+
 * {
   box-sizing: border-box;
 }

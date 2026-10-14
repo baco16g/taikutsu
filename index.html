@@ -6,16 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>退屈を、やっつけろ！</title>
     <!-- Dela Gothic One: the intro's main headline only (see
-         HomePage.module.css's .introTitle h1) — Google Fonts ships this
-         family in a single weight (400), so this requests nothing extra.
-         display=swap shows the fallback sans-serif immediately and swaps
-         in-place once the webfont lands, so the headline is never
-         invisible while it loads or if the request fails. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+         HomePage.module.css's .introTitle h1), self-hosted as an 8-glyph
+         subset (src/index.css) so there's no external round-trip — preload
+         it directly instead of a Google Fonts stylesheet link. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/dela-gothic-one-title.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
   </head>
   <body>

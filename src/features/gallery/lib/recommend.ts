@@ -96,6 +96,9 @@ function buildConnections(game: RawGame, chosenMoveIds: ReadonlySet<string>): Ga
     })
 }
 
+/** The carousel's card is 440px wide at its largest (GalleryCarousel.module.css's --card-w), so this covers up to 2x pixel density without shipping the CDN's full-res (1920px) source. */
+const THUMBNAIL_WIDTH_PX = 880
+
 function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryGame {
   const game = GAMES_BY_ID.get(gameId)
   if (!game) throw new Error(`Unknown game id: ${gameId}`)
@@ -104,7 +107,7 @@ function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryG
     name: game.name,
     catchphrase: game.catchphrase,
     intro: game.intro,
-    thumbnailSrc: game.thumbnail.remoteUrl,
+    thumbnailSrc: `${game.thumbnail.remoteUrl}?sw=${THUMBNAIL_WIDTH_PX}`,
     thumbnailAlt: `「${game.name}」のキービジュアル`,
     sourceUrl: game.sourceUrl,
     connections: buildConnections(game, chosenMoveIds),

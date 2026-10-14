@@ -108,7 +108,7 @@ describe('recommendGames', () => {
     const [game] = recommendGames(DEFAULT_MOVE_IDS)
     const raw = RAW_GAMES.find((g) => g.id === game.id)
     expect(raw).toBeDefined()
-    expect(game.thumbnailSrc).toBe(raw?.thumbnail.remoteUrl)
+    expect(game.thumbnailSrc).toBe(`${raw?.thumbnail.remoteUrl}?sw=880`)
     expect(game.thumbnailAlt).toContain(game.name)
   })
 })
