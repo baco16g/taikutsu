@@ -52,7 +52,7 @@
   position: absolute;
   inset: 22px 0 0 44px;
   z-index: -1;
-  background-image: url('/backgrounds/shibuya-scramble.png');
+  background-image: url('/backgrounds/shibuya-scramble.webp');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
