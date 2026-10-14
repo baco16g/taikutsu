@@ -1,9 +1,9 @@
 import { useId, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { blobPointsToPath } from './shapeMath'
-import { CENTER, VIEW_SIZE, type Hp } from './shapeStates'
-import { COLLAPSE_HOLES } from './collapseHoles'
+import { blobPointsToPath } from '../lib/shapeMath'
+import { CENTER, VIEW_SIZE, type Hp } from '../lib/shapeStates'
+import { COLLAPSE_HOLES } from '../lib/collapseHoles'
+import { useCreatureAnimation, type ImpactInfo } from '../hooks/useCreatureAnimation'
 import { TextureFilters, TextureGradients, TextureLayer } from './textures'
-import { useCreatureAnimation, type ImpactInfo } from './useCreatureAnimation'
 import { HitParticles, type HitParticlesHandle } from './HitParticles'
 import styles from './TaikutsuCreature.module.css'
 

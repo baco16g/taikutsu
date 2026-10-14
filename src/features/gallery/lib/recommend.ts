@@ -1,8 +1,8 @@
-import specialMovesData from '../../../data/specialMoves.json'
-import gameIntrosData from '../../../data/gameIntros.json'
-import type { RawMove } from '../commandMenu/moves'
-import { mulberry32 } from '../taikutsu/prng'
-import type { GalleryConnection, GalleryGame, GalleryMove } from './types'
+import specialMovesData from '../../../../data/specialMoves.json'
+import gameIntrosData from '../../../../data/gameIntros.json'
+import type { RawMove } from '../../commandMenu/lib/moves'
+import { mulberry32 } from '../../taikutsu/lib/prng'
+import type { GalleryConnection, GalleryGame, GalleryMove } from '../types'
 
 /**
  * The real recommendation engine: computes which games to show from the
@@ -41,7 +41,7 @@ import type { GalleryConnection, GalleryGame, GalleryMove } from './types'
  * `TOTAL_GAME_COUNT`.
  *
  * The whole thing is seeded from the chosen move ids themselves (via
- * mulberry32, the project's existing PRNG at src/features/taikutsu/prng.ts)
+ * mulberry32, the project's existing PRNG at src/features/taikutsu/lib/prng.ts)
  * so the same set of chosen moves always reproduces the same gallery
  * (deterministic for tests/snapshots), while a different set varies which
  * games surface. The seed is order-independent (ids are deduped and sorted
@@ -112,7 +112,9 @@ function buildGame(gameId: string, chosenMoveIds: ReadonlySet<string>): GalleryG
 }
 
 function hasStrongTie(game: RawGame, chosenMoveIds: ReadonlySet<string>): boolean {
-  return game.relatedMoves.some((rel) => rel.relevance === 'strong' && chosenMoveIds.has(rel.moveId))
+  return game.relatedMoves.some(
+    (rel) => rel.relevance === 'strong' && chosenMoveIds.has(rel.moveId),
+  )
 }
 
 function isStronglyTiedToMove(game: RawGame, moveId: string): boolean {

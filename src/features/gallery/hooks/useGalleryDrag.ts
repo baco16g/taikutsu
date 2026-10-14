@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import gsap from 'gsap'
 import { Draggable } from 'gsap/Draggable'
-import styles from './GalleryCarousel.module.css'
+import styles from '../components/GalleryCarousel.module.css'
 
 gsap.registerPlugin(Draggable)
 

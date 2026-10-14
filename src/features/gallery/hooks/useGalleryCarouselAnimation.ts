@@ -1,7 +1,7 @@
 import type { RefObject } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import type { ResolvedSlideTransform } from './carouselLayout'
+import type { ResolvedSlideTransform } from '../lib/carouselLayout'
 
 /**
  * Pure DOM choreography for the carousel ring. Position is computed purely

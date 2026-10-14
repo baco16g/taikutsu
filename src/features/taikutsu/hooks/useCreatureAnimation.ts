@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef } from 'react'
 import gsap from 'gsap'
-import type { BlobPoint } from './shapeMath'
-import { blobPointToVec2, blobPointsToPath, cloneBlobPoints, lerpBlobPoints } from './shapeMath'
-import { CENTER, HIT_INDEX_BY_HP, HP_SHAPES, VIEW_SIZE, type Hp } from './shapeStates'
-import { COLLAPSE_HOLES } from './collapseHoles'
+import type { BlobPoint } from '../lib/shapeMath'
+import {
+  blobPointToVec2,
+  blobPointsToPath,
+  cloneBlobPoints,
+  lerpBlobPoints,
+} from '../lib/shapeMath'
+import { CENTER, HIT_INDEX_BY_HP, HP_SHAPES, VIEW_SIZE, type Hp } from '../lib/shapeStates'
+import { COLLAPSE_HOLES } from '../lib/collapseHoles'
 
 export interface ImpactInfo {
   /** fractional 0-1 position within the creature's own viewBox, for the particle canvas to map to pixels */

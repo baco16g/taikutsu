@@ -1,4 +1,4 @@
-import { mulberry32 } from '../taikutsu/prng'
+import { mulberry32 } from '../../taikutsu/lib/prng'
 
 export interface IntroSeed {
   /** Fraction (0-1) of the actor's own box — paired with `maskContentUnits="objectBoundingBox"` on the reveal mask. */
@@ -20,7 +20,7 @@ export const MAX_SEED_RADIUS = 0.3
  * IntroActor's reveal mask (circles grow here) and ArrivalDust's canvas
  * (particles fly toward these same points), so the dust visibly feeds the
  * mask bloom instead of landing on unrelated spots. Computed once at module
- * scope with a fixed seed, same pattern as src/features/taikutsu/collapseHoles.ts.
+ * scope with a fixed seed, same pattern as src/features/taikutsu/lib/collapseHoles.ts.
  */
 export const INTRO_SEEDS: IntroSeed[] = (() => {
   const rand = mulberry32(2026)

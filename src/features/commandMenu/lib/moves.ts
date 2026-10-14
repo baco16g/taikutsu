@@ -1,6 +1,6 @@
-import specialMovesData from '../../../data/specialMoves.json'
-import { MOVE_ICONS } from './moveIcons'
-import type { MoveEntry } from './types'
+import specialMovesData from '../../../../data/specialMoves.json'
+import { MOVE_ICONS } from '../data/moveIcons'
+import type { MoveEntry } from '../types'
 
 /** A move's raw shape in data/specialMoves.json, before an icon is attached. */
 export interface RawMove {

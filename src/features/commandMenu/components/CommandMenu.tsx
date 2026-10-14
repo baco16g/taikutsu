@@ -9,11 +9,11 @@ import {
 } from 'react'
 import clsx from 'clsx'
 import { ArrowUpRightIcon } from '@phosphor-icons/react'
-import { useCommandMenuController } from './useCommandMenuController'
-import { useCommandMenuAnimation } from './useCommandMenuAnimation'
-import { useCommandSound } from './useCommandSound'
-import { useSupportsHover } from '../../hooks/useSupportsHover'
-import type { CommandMenuEvents, CommandMoveEvent, MoveEntry } from './types'
+import { useCommandMenuController } from '../hooks/useCommandMenuController'
+import { useCommandMenuAnimation } from '../hooks/useCommandMenuAnimation'
+import { useCommandSound } from '../hooks/useCommandSound'
+import { useSupportsHover } from '../../../hooks/useSupportsHover'
+import type { CommandMenuEvents, CommandMoveEvent, MoveEntry } from '../types'
 import styles from './CommandMenu.module.css'
 
 export interface CommandMenuProps {

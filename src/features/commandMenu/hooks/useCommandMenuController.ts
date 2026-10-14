@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
-import { ALL_MOVES, ATTACK_LIMIT, VISIBLE_COUNT, createShuffledPool, drawMoves } from './moves'
-import type { MoveEntry } from './types'
+import { ALL_MOVES, ATTACK_LIMIT, VISIBLE_COUNT, createShuffledPool, drawMoves } from '../lib/moves'
+import type { MoveEntry } from '../types'
 
 type CommandMenuStatus = 'active' | 'complete'
 

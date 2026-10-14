@@ -1,7 +1,7 @@
 import { useRef, type RefObject } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import styles from './CommandMenu.module.css'
+import styles from '../components/CommandMenu.module.css'
 
 /**
  * Pure DOM choreography for the command menu: the selection band that

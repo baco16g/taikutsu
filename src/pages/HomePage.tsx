@@ -3,19 +3,19 @@ import { flushSync } from 'react-dom'
 import clsx from 'clsx'
 import { SpeakerHighIcon, SpeakerXIcon } from '@phosphor-icons/react'
 import { WorldFrame } from '../components/WorldFrame/WorldFrame'
-import { CommandMenu } from '../features/commandMenu/CommandMenu'
-import { ATTACK_LIMIT } from '../features/commandMenu/moves'
-import { useCommandSound } from '../features/commandMenu/useCommandSound'
+import { CommandMenu } from '../features/commandMenu/components/CommandMenu'
+import { ATTACK_LIMIT } from '../features/commandMenu/lib/moves'
+import { useCommandSound } from '../features/commandMenu/hooks/useCommandSound'
 import type { CommandMenuEvents } from '../features/commandMenu/types'
-import { IntroActor } from '../features/intro/IntroActor'
-import { useIntroPhase } from '../features/intro/useIntroPhase'
-import { INTRO_COPY } from '../features/intro/introCopy'
-import type { TaikutsuCreatureHandle } from '../features/taikutsu/TaikutsuCreature'
-import type { Hp } from '../features/taikutsu/shapeStates'
-import { BattleStatus } from '../features/taikutsu/BattleStatus/BattleStatus'
-import { DefeatMessage } from '../features/reveal/DefeatMessage'
-import { RevealTransition } from '../features/reveal/RevealTransition'
-import { GameGallery } from '../features/gallery/GameGallery'
+import { IntroActor } from '../features/intro/components/IntroActor'
+import { useIntroPhase } from '../features/intro/hooks/useIntroPhase'
+import { INTRO_COPY } from '../features/intro/data/introCopy'
+import type { TaikutsuCreatureHandle } from '../features/taikutsu/components/TaikutsuCreature'
+import type { Hp } from '../features/taikutsu/lib/shapeStates'
+import { BattleStatus } from '../features/taikutsu/components/BattleStatus/BattleStatus'
+import { DefeatMessage } from '../features/reveal/components/DefeatMessage'
+import { RevealTransition } from '../features/reveal/components/RevealTransition'
+import { GameGallery } from '../features/gallery/components/GameGallery'
 import type { GalleryMove } from '../features/gallery/types'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { useSupportsHover } from '../hooks/useSupportsHover'
@@ -29,7 +29,7 @@ const DEFEAT_MESSAGE_HOLD_MS = 800
  * タ・イクツ, "必殺技を選ぶ" carries that same creature instance into battle,
  * then the 必殺技選択→撃破→ギャラリー flow runs to completion — all three
  * phases share one WorldFrame and one タ・イクツ for the whole session (see
- * src/features/intro/useIntroPhase.ts for why the creature can never be
+ * src/features/intro/hooks/useIntroPhase.ts for why the creature can never be
  * nested inside either phase's own conditionally-rendered markup: it would
  * remount, losing its breathing phase/texture continuity, exactly what the
  * intro→battle handoff exists to avoid).

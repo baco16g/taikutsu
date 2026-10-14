@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import gsap from 'gsap'
-import { MAX_SEED_RADIUS } from './introSeeds'
+import { MAX_SEED_RADIUS } from '../data/introSeeds'
 
 export type IntroPhase = 'arrival' | 'ready' | 'depart' | 'moving' | 'settling' | 'battle'
 

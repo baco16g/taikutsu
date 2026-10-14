@@ -1,7 +1,10 @@
 import { useId, type Ref, type RefObject } from 'react'
-import { TaikutsuCreature, type TaikutsuCreatureHandle } from '../taikutsu/TaikutsuCreature'
-import type { Hp } from '../taikutsu/shapeStates'
-import { INTRO_SEEDS } from './introSeeds'
+import {
+  TaikutsuCreature,
+  type TaikutsuCreatureHandle,
+} from '../../taikutsu/components/TaikutsuCreature'
+import type { Hp } from '../../taikutsu/lib/shapeStates'
+import { INTRO_SEEDS } from '../data/introSeeds'
 import { ArrivalDust } from './ArrivalDust'
 import styles from './IntroActor.module.css'
 

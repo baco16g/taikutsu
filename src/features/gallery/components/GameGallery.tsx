@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { GalleryCarousel } from './GalleryCarousel'
 import { GameInfoPanel } from './GameInfoPanel'
-import { DEFAULT_CHOSEN_MOVES, recommendGames } from './recommend'
-import type { GalleryMove } from './types'
+import { DEFAULT_CHOSEN_MOVES, recommendGames } from '../lib/recommend'
+import type { GalleryMove } from '../types'
 import styles from './GameGallery.module.css'
 
 export interface GameGalleryProps {

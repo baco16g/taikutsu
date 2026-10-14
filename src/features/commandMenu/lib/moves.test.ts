@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { drawMoves } from './moves'
-import type { MoveEntry } from './types'
+import type { MoveEntry } from '../types'
 
 function move(id: string): MoveEntry {
   return { id, name: id, shortDescription: id, icon: (() => null) as unknown as MoveEntry['icon'] }

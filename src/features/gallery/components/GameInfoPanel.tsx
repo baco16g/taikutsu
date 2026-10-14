@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { ArrowSquareOutIcon } from '@phosphor-icons/react'
-import type { GalleryGame } from './types'
+import type { GalleryGame } from '../types'
 import styles from './GameInfoPanel.module.css'
 
 export interface GameInfoPanelProps {

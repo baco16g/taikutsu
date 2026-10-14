@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import gameIntrosData from '../../../data/gameIntros.json'
-import specialMovesData from '../../../data/specialMoves.json'
+import gameIntrosData from '../../../../data/gameIntros.json'
+import specialMovesData from '../../../../data/specialMoves.json'
 import { DEFAULT_CHOSEN_MOVES, TOTAL_GAME_COUNT, recommendGames } from './recommend'
 
 interface RawRelatedMove {
@@ -14,9 +14,7 @@ interface RawGame {
 }
 
 const RAW_GAMES = gameIntrosData.games as RawGame[]
-const MOVE_NAMES_BY_ID = new Map(
-  specialMovesData.moves.map((m) => [m.id, m.name] as const),
-)
+const MOVE_NAMES_BY_ID = new Map(specialMovesData.moves.map((m) => [m.id, m.name] as const))
 
 /** The real game ids with a strong tie to `moveId`, straight from data/gameIntros.json — used to verify the engine against the bundled data, not a second hand-picked fixture. */
 function gamesStronglyTiedTo(moveId: string): Set<string> {
@@ -47,7 +45,9 @@ describe('recommendGames', () => {
   it('surfaces strong-tie games for the chosen moves, with honest connections', () => {
     const games = recommendGames(DEFAULT_MOVE_IDS)
     const chosenSet = new Set(DEFAULT_MOVE_IDS)
-    const strongTieUniverse = new Set(DEFAULT_MOVE_IDS.flatMap((id) => [...gamesStronglyTiedTo(id)]))
+    const strongTieUniverse = new Set(
+      DEFAULT_MOVE_IDS.flatMap((id) => [...gamesStronglyTiedTo(id)]),
+    )
 
     const tiedPicks = games.filter((g) => g.connections.length > 0)
     expect(tiedPicks.length).toBeGreaterThan(0)

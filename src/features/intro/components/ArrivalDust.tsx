@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useOversizedCanvas } from '../../hooks/useOversizedCanvas'
-import { INTRO_SEEDS } from './introSeeds'
+import { useOversizedCanvas } from '../../../hooks/useOversizedCanvas'
+import { INTRO_SEEDS } from '../data/introSeeds'
 import styles from './ArrivalDust.module.css'
 
 /**
  * Small dark grains flying in from around タ・イクツ's own box toward the
  * same seed points IntroActor's reveal mask grows from — purely decorative,
  * independent canvas sized by useOversizedCanvas (same shared setup
- * src/features/taikutsu/HitParticles.tsx uses), but with its own one-shot
+ * src/features/taikutsu/components/HitParticles.tsx uses), but with its own one-shot
  * "coalesce toward a point" motion instead of HitParticles' decaying
  * outward burst. Mounted only while the intro's arrival phase is live; the
  * parent unmounting it is what stops it (no internal lifecycle beyond that).

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import clsx from 'clsx'
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react'
-import { useMediaQuery } from '../../hooks/useMediaQuery'
-import { useGalleryCarouselAnimation } from './useGalleryCarouselAnimation'
-import { useGalleryDrag } from './useGalleryDrag'
-import { PC_STEPS, SP_STEPS, circularDelta, resolveSlideTransform } from './carouselLayout'
-import type { GalleryGame } from './types'
+import { useMediaQuery } from '../../../hooks/useMediaQuery'
+import { useGalleryCarouselAnimation } from '../hooks/useGalleryCarouselAnimation'
+import { useGalleryDrag } from '../hooks/useGalleryDrag'
+import { PC_STEPS, SP_STEPS, circularDelta, resolveSlideTransform } from '../lib/carouselLayout'
+import type { GalleryGame } from '../types'
 import styles from './GalleryCarousel.module.css'
 
 export interface GalleryCarouselProps {

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { useCommandMenuController } from './useCommandMenuController'
-import { ATTACK_LIMIT, VISIBLE_COUNT } from './moves'
+import { ATTACK_LIMIT, VISIBLE_COUNT } from '../lib/moves'
 
 describe('useCommandMenuController', () => {
   it('starts active with a full six-move hand and no attacks landed', () => {

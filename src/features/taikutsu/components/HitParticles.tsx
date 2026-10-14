@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useImperativeHandle, useRef } from 'react'
-import { useOversizedCanvas } from '../../hooks/useOversizedCanvas'
+import { useOversizedCanvas } from '../../../hooks/useOversizedCanvas'
 
 export interface HitParticlesHandle {
   burst: (xFrac: number, yFrac: number, big: boolean) => void
