@@ -15,6 +15,8 @@ export interface IntroActorProps {
   maskCirclesRef: Ref<SVGGElement>
   creatureRef: Ref<TaikutsuCreatureHandle>
   reducedMotion: boolean
+  /** アイドル時の呼吸/浮遊アニメーションを動かすかどうか——ギャラリー表示中など、タ・イクツ自身が他のコンテンツに覆われて見えていない間は、呼び出し元がfalseにして無駄な計算・DOM更新を止める。 */
+  idleEnabled: boolean
   onHpChange: (hp: Hp) => void
   /** revealマスクをまだ適用すべきかどうか——formation完了後は外され、以降セッションが続く間マスク合成のコストが一切かからなくなる。 */
   maskActive: boolean
@@ -38,6 +40,7 @@ export function IntroActor({
   maskCirclesRef,
   creatureRef,
   reducedMotion,
+  idleEnabled,
   onHpChange,
   maskActive,
   showDust,
@@ -60,7 +63,7 @@ export function IntroActor({
       >
         <TaikutsuCreature
           ref={creatureRef}
-          idleEnabled
+          idleEnabled={idleEnabled}
           reducedMotion={reducedMotion}
           size="100%"
           onHpChange={onHpChange}

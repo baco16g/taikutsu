@@ -290,6 +290,7 @@ export function HomePage() {
           maskCirclesRef={intro.maskCirclesGroupRef}
           creatureRef={creatureRef}
           reducedMotion={reducedMotion}
+          idleEnabled={!showGallery}
           onHpChange={handleHpChange}
           maskActive={intro.maskActive}
           showDust={intro.showDust}
