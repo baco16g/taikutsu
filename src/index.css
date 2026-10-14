@@ -49,6 +49,11 @@ body {
   position: absolute;
   width: 1px;
   height: 1px;
+  /* <p>などの既定の余白を残すと、ページ末尾に置いた読み上げ用の要素が
+     ページの下へはみ出し、その分だけスクロールできてしまう。 */
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
