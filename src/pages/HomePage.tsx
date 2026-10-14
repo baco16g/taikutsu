@@ -13,36 +13,27 @@ import type { TaikutsuCreatureHandle } from '../features/taikutsu/components/Tai
 import type { Hp } from '../features/taikutsu/lib/shapeStates'
 import { RevealTransition } from '../features/reveal/components/RevealTransition'
 import { GameGallery } from '../features/gallery/components/GameGallery'
-import type { GalleryMove } from '../features/gallery/types'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { useSupportsHover } from '../hooks/useSupportsHover'
+import { DEFEAT_HOLD_MS, deriveSessionView, type SessionStage } from './homeSession'
 import styles from './HomePage.module.css'
 
-/** 撃破メッセージを、はっきり読める状態で保持してからrevealが画面を覆い始めるまでの時間。 */
-const DEFEAT_MESSAGE_HOLD_MS = 800
-
 /**
- * このアプリの唯一の実画面、`/`にマウントされる: パーティクルが
- * タ・イクツへ収束し、「必殺技を選ぶ」が同じクリーチャーインスタンスを
- * そのまま戦闘へ持ち込み、必殺技選択→撃破→ギャラリーのフローが完走する
- * ——3つのフェーズはセッションを通して1つのWorldFrameと1体のタ・イクツを
- * 共有する（クリーチャーがどちらのフェーズの条件付きレンダリング
- * マークアップ内にも入れ子にできない理由はsrc/features/intro/hooks/useIntroPhase.ts
- * 参照: 入れ子にすると再マウントされ、呼吸フェーズ/テクスチャの連続性を
- * 失ってしまう——それこそがintro→battleの引き継ぎが存在する理由そのもの）。
+ * このアプリの唯一の画面（`/`）。イントロ→戦闘→撃破→ギャラリー→再戦の
+ * 流れを、各機能のコンポーネントをつないで進める。
+ *
+ * タ・イクツ（IntroActor）は各画面の中ではなく、ここで1体だけ描画する。
+ * 画面ごとに入れ子にすると切り替えのたびに再マウントされ、呼吸の動きや
+ * テクスチャが途切れてしまうため。各画面は「立ち位置の目印（dock）」だけを
+ * 持ち、useIntroPhaseがその位置へタ・イクツを動かす。
  */
 export function HomePage() {
   const reducedMotion = usePrefersReducedMotion()
   const [soundEnabled, setSoundEnabled] = useState(false)
-  const [announcement, setAnnouncement] = useState('')
 
-  // CommandMenu自身のサウンドセット（useCommandSound）とそのホバー対応
-  // ゲート（useSupportsHover）を再利用することで、「たたかう」のホバー
-  // サウンドは戦闘画面のコマンド行がホバー/フォーカス時に鳴らすのと
-  // 同じ「move」音になる（新規の別音ではなく）——そしてそれらの行と
-  // 同様に、実ホバーを持つ端末でのみ鳴らす（タッチのタップはクリック
-  // 直前にpointerenterを合成してしまうため、これをしないと本来の
-  // ホバー探索ではなく全てのタップでホバー音が鳴ってしまう）。
+  // 「たたかう」のホバー音は、戦闘画面のコマンド行と同じ「move」音にする。
+  // タッチ端末ではタップの直前にpointerenterが合成されるため、行と同様に
+  // 実際にホバーできる端末でだけ鳴らす。
   const introSound = useCommandSound(soundEnabled)
   const supportsHover = useSupportsHover()
   const handleStartHover = useCallback(() => {
@@ -50,100 +41,70 @@ export function HomePage() {
   }, [supportsHover, introSound])
 
   const creatureRef = useRef<TaikutsuCreatureHandle>(null)
-  const [hitSignal, setHitSignal] = useState(0)
-  const [impactCount, setImpactCount] = useState(0)
-  const chosenMovesRef = useRef<GalleryMove[]>([])
-
-  const [defeated, setDefeated] = useState(false)
-  const [revealActive, setRevealActive] = useState(false)
-  const [showGallery, setShowGallery] = useState(false)
-  const defeatHandledRef = useRef(false)
-  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleDefeatComplete = useCallback(() => {
-    if (defeatHandledRef.current) return
-    defeatHandledRef.current = true
-    setDefeated(true)
-    setAnnouncement('タ・イクツを倒した。退屈の向こうに、まだ知らない遊びがある。')
-    holdTimerRef.current = setTimeout(() => {
-      holdTimerRef.current = null
-      setRevealActive(true)
-    }, DEFEAT_MESSAGE_HOLD_MS)
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
-    }
-  }, [])
-
-  const handleCovered = useCallback(() => {
-    flushSync(() => setShowGallery(true))
-  }, [])
-
-  const handleRevealComplete = useCallback(() => {
-    setRevealActive(false)
-    setAnnouncement('タ・イクツを撃破しました。ゲームギャラリーを表示しています。')
-    requestAnimationFrame(() => {
-      document.getElementById('gallery-heading-title')?.focus({ preventScroll: true })
-    })
-  }, [])
+  /** 着弾した順の技。HP表示とギャラリーの推薦の両方の元になる。 */
+  const [landedMoves, setLandedMoves] = useState<LandedMove[]>([])
+  const [stage, setStage] = useState<SessionStage>('undefeated')
 
   const handleArrived = useCallback(() => {
     requestAnimationFrame(() => {
       document.getElementById('intro-battle-title')?.focus({ preventScroll: true })
     })
-    setAnnouncement('タ・イクツが現れました。スキルを選んでください。')
   }, [])
 
   const intro = useIntroPhase({ reducedMotion, onArrived: handleArrived })
+  const view = deriveSessionView(intro.phase, stage)
+
+  const handleImpact = (move: LandedMove) => {
+    setLandedMoves((moves) => [...moves, move])
+  }
+
+  // 着弾数が増えたら、タ・イクツの被弾アニメーションを1段階進める。
+  const lastLandedCountRef = useRef(0)
+  useEffect(() => {
+    const landedCount = landedMoves.length
+    if (landedCount > lastLandedCountRef.current) creatureRef.current?.attack()
+    lastLandedCountRef.current = landedCount
+  }, [landedMoves.length])
+
+  // 撃破は着弾数からではなく、タ・イクツの撃破アニメーションが実際に
+  // 終わったこと（HPが0の形で静止したこと）で判定する。
+  const handleHpChange = (hp: Hp) => {
+    if (hp === 0) setStage((current) => (current === 'undefeated' ? 'defeated' : current))
+  }
+
+  useEffect(() => {
+    if (stage !== 'defeated') return
+    const timer = setTimeout(() => setStage('covering'), DEFEAT_HOLD_MS)
+    return () => clearTimeout(timer)
+  }, [stage])
+
+  // RevealTransitionはこの呼び出しが戻った直後にシートを外し始めるため、
+  // ギャラリーへの差し替えをflushSyncで同期的にcommitしておく。
+  const handleCovered = useCallback(() => {
+    flushSync(() => setStage('uncovering'))
+  }, [])
+
+  const handleRevealComplete = useCallback(() => {
+    setStage('gallery')
+    requestAnimationFrame(() => {
+      document.getElementById('gallery-heading-title')?.focus({ preventScroll: true })
+    })
+  }, [])
 
   const handleReplay = () => {
     creatureRef.current?.reset()
-    chosenMovesRef.current = []
-    setImpactCount(0)
-    setDefeated(false)
-    defeatHandledRef.current = false
-    setShowGallery(false)
-    setAnnouncement('')
+    setLandedMoves([])
+    setStage('undefeated')
     intro.resetIntro()
   }
-
-  // 単純なクリーチャー・プレースホルダーコンポーネントなら内部で持つはずの
-  // 「hitシグナル→attach()」の配線をここで手動で行っている——IntroActor
-  // （そのようなプレースホルダーではない）がこのページの共有タ・イクツ
-  // インスタンスを実際に保持しているため（上のコンポーネントdocコメント参照）。
-  const lastHitSignalRef = useRef(hitSignal)
-  useEffect(() => {
-    if (hitSignal === lastHitSignalRef.current) return
-    lastHitSignalRef.current = hitSignal
-    creatureRef.current?.attack()
-  }, [hitSignal])
-
-  // 「撃破アニメーションが実際に再生し終わった」ことを示す本物のシグナル
-  // ——impactCountのタイミングからの推測ではない。
-  const handleHpChange = (hp: Hp) => {
-    if (hp === 0) handleDefeatComplete()
-  }
-
-  const handleImpact = (move: LandedMove) => {
-    setHitSignal((n) => n + 1)
-    setImpactCount((n) => n + 1)
-    chosenMovesRef.current = [...chosenMovesRef.current, move]
-  }
-
-  const showIntro = ['arrival', 'ready', 'depart'].includes(intro.phase)
-  const showBattle = ['moving', 'settling', 'battle'].includes(intro.phase)
-  const introInert = intro.phase !== 'arrival' && intro.phase !== 'ready'
-  const battleInert = intro.phase !== 'battle' || revealActive
 
   return (
     <>
       <WorldFrame
         worldContainerRef={intro.worldRef}
-        decorationStrength={showIntro ? 'thin' : 'normal'}
-        className={showGallery ? styles.galleryWorld : undefined}
-        note={showIntro ? '© OpenStreetMap contributors' : undefined}
+        decorationStrength={view.showIntro ? 'thin' : 'normal'}
+        className={view.showGallery ? styles.galleryWorld : undefined}
+        note={view.showIntro ? '© OpenStreetMap contributors' : undefined}
         cornerExtra={
           <button
             type="button"
@@ -160,39 +121,39 @@ export function HomePage() {
           </button>
         }
       >
-        {showIntro && (
+        {view.showIntro && (
           <IntroScreen
             sectionRef={intro.introSectionRef}
             creatureDockRef={intro.introDockRef}
-            inert={introInert}
+            inert={view.introInert}
             startPending={intro.pendingStart}
             onStart={intro.requestStart}
             onStartHover={handleStartHover}
           />
         )}
 
-        {showBattle && (
+        {view.showBattleSection && (
           <section
             className={styles.battleSection}
             ref={intro.battleSectionRef}
-            inert={battleInert || undefined}
+            inert={view.battleInert || undefined}
           >
-            {!showGallery && (
+            {!view.showGallery && (
               <BattleScreen
                 creatureDockRef={intro.battleDockRef}
                 creatureTargetRef={intro.wrapperRef}
-                landedCount={impactCount}
-                defeated={defeated}
+                landedCount={landedMoves.length}
+                defeated={view.defeated}
                 reducedMotion={reducedMotion}
                 soundEnabled={soundEnabled}
                 onImpact={handleImpact}
               />
             )}
 
-            {showGallery && (
+            {view.showGallery && (
               <GameGallery
                 reducedMotion={reducedMotion}
-                chosenMoves={chosenMovesRef.current}
+                chosenMoves={landedMoves}
                 onReplay={handleReplay}
               />
             )}
@@ -204,7 +165,7 @@ export function HomePage() {
           maskCirclesRef={intro.maskCirclesGroupRef}
           creatureRef={creatureRef}
           reducedMotion={reducedMotion}
-          idleEnabled={!showGallery}
+          idleEnabled={!view.showGallery}
           onHpChange={handleHpChange}
           maskActive={intro.maskActive}
           showDust={intro.showDust}
@@ -212,7 +173,7 @@ export function HomePage() {
         />
       </WorldFrame>
 
-      {revealActive && (
+      {view.revealActive && (
         <RevealTransition
           reducedMotion={reducedMotion}
           worldContainerRef={intro.worldRef}
@@ -222,7 +183,7 @@ export function HomePage() {
       )}
 
       <p className="sr-only" role="status" aria-live="polite">
-        {announcement}
+        {view.announcement}
       </p>
     </>
   )

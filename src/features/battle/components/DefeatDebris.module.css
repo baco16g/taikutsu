@@ -4,7 +4,7 @@
    アウトする。そのためこちらは画面中央でそれらがフェードアウトするのに
    合わせてクロスフェードで現れ、別の不透明な「画面」へ切り替わる
    ことはない（実際にギャラリーへ向けて全面を覆うのは、
-   DEFEAT_MESSAGE_HOLD_MS後に別途始まるRevealTransition自身のsheets）。
+   DEFEAT_HOLD_MS（src/pages/homeSession.ts）後に始まるRevealTransitionのシート）。
    純粋に演出用（下の破片フィールドのみ、テキストはない）なので
    pointer-events:none。 */
 .root {
