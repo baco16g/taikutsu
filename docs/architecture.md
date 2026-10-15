@@ -36,6 +36,7 @@
 - React 19 と TypeScript で書かれた1ページの Web アプリケーションで、Vite でビルドします。ルートは `/` の1つだけです（react-router-dom、`BrowserRouter` の `basename` は Vite の `BASE_URL`）。
 - アニメーションは GSAP 3（`@gsap/react` の `useGSAP`）で制御します。タ・イクツは SVG で描き、イントロで集まる粒と、タ・イクツが被弾したときに散る破片は canvas で描きます。
 - 効果音は Tone.js でブラウザ内で合成します。
+- 最初に読み込む JS を小さくするため、ギャラリー（推薦用のゲームのデータを含む）と Tone.js は動的 import で別のファイルに分け、必要になってから読み込みます（§5.2）。
 - スタイルは CSS Modules（クラス名の有効範囲をファイルごとに分ける仕組み）で書き、共通の色などは `src/styles/tokens.css` の CSS 変数にまとめています。
 - 入口は `src/main.tsx` → `src/App.tsx` → `src/pages/HomePage.tsx` です。
 
@@ -70,6 +71,8 @@ src/
       data/creatureProfile.ts  肩書きと名前（イントロと戦闘の両方で表示）
     reveal/                    戦闘画面からギャラリーへの画面遷移（斜めのシート）
     gallery/                   ゲームのギャラリー（カルーセル・作品の説明・推薦）
+      hooks/useLazyGameGallery ギャラリーの遅延読み込みと、その状態（読み込み中・完了・失敗）
+      components/GalleryLoadError  ギャラリーを読み込めなかったときの表示
       lib/recommend.ts         推薦ロジック（純粋関数）
   catalog/                     data/*.json を読む唯一の場所と、その型
   lib/prng.ts                  決まった数列を返す乱数生成器（mulberry32）
@@ -161,19 +164,19 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> undefeated
     undefeated --> defeated: タ・イクツが HP0 の形で静止する
-    defeated --> covering: 800ms 後（DEFEAT_HOLD_MS）
+    defeated --> covering: 800ms（DEFEAT_HOLD_MS）が過ぎ、ギャラリーの読み込みも終わる
     covering --> uncovering: シートが画面を覆いきる（その場でギャラリーへ差し替え）
     uncovering --> gallery: シートが外れきる
     gallery --> undefeated: もう一度たたかう
 ```
 
-| 段階         | 撃破済み | 画面遷移中 | ギャラリー表示 | 読み上げ                                                |
-| ------------ | -------- | ---------- | -------------- | ------------------------------------------------------- |
-| `undefeated` | いいえ   | いいえ     | いいえ         | イントロ中は無し、戦闘中は「タ・イクツが現れました。…」 |
-| `defeated`   | はい     | いいえ     | いいえ         | 「タ・イクツを倒した。…」                               |
-| `covering`   | はい     | はい       | いいえ         | 同上                                                    |
-| `uncovering` | はい     | はい       | はい           | 同上                                                    |
-| `gallery`    | はい     | いいえ     | はい           | 「タ・イクツを撃破しました。…」                         |
+| 段階         | 撃破済み | 画面遷移中 | ギャラリー表示 | 読み上げ                                                                                                    |
+| ------------ | -------- | ---------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| `undefeated` | いいえ   | いいえ     | いいえ         | イントロ中は無し、戦闘中は「タ・イクツが現れました。…」                                                     |
+| `defeated`   | はい     | いいえ     | いいえ         | 「タ・イクツを倒した。…」                                                                                   |
+| `covering`   | はい     | はい       | いいえ         | 同上                                                                                                        |
+| `uncovering` | はい     | はい       | はい           | 同上                                                                                                        |
+| `gallery`    | はい     | いいえ     | はい           | 「タ・イクツを撃破しました。…」。ギャラリーを読み込めなかったときは「ゲームの一覧を読み込めませんでした。」 |
 
 ---
 
@@ -223,11 +226,11 @@ sequenceDiagram
 
     Creature-->>Home: onHpChange(0)
     Home->>Home: stage = defeated（読み上げ、破片の表示）
-    Home->>Home: 800ms 待つ
+    Home->>Home: 800ms と、ギャラリーの読み込み（戦闘の開始時に始めている）の両方を待つ
     Home->>Reveal: stage = covering（マウント）
     Reveal->>Reveal: スクロールを止め、3枚のシートで覆う
     Reveal-->>Home: onCovered
-    Home->>Gallery: flushSync で stage = uncovering（ギャラリーをマウント）
+    Home->>Gallery: flushSync で stage = uncovering（ギャラリーをマウント。読み込めなかったときは GalleryLoadError）
     Reveal->>Reveal: シートを外す
     Reveal-->>Home: onComplete
     Home->>Home: stage = gallery、ギャラリーの見出しへフォーカス
@@ -253,18 +256,19 @@ sequenceDiagram
 | カーソル位置・攻撃中フラグ・タッチの1回目の選択 | `useCommandMenuInteraction`                   | 同上                                                 |
 | タ・イクツの形（HP の段階）                     | `useCreatureAnimation`（TaikutsuCreature 内） | ページを開いている間。再戦で `reset()`               |
 | ギャラリーで正面にある作品                      | `GameGallery` / `GalleryCarousel`             | ギャラリーが表示されている間                         |
+| ギャラリーの読み込みの状態                      | `useLazyGameGallery`（HomePage 内）           | ページを開いている間。読み込みは1回だけ              |
 
 ### 5.2 外部との境界
 
-| 対象                 | 内容                                                                                                                                                                       |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 同梱データ           | `data/specialMoves.json`（スキル）と `data/gameIntros.json`（ゲームとスキルの結びつき）。ビルド時にバンドルし、実行時の通信はしない。`src/catalog/` だけが import する     |
-| ゲーム画像           | 外部のゲーム販売サイトの画像 URL に `?sw=880`（幅880px指定）を付けて `<img>` で読み込む。正面と隣の作品を先に読み込み、それが済んでから残りを読み込む                      |
-| 販売ページへのリンク | `target="_blank" rel="noopener noreferrer"` で新しいタブに開く                                                                                                             |
-| 効果音               | Tone.js（Web Audio API）でブラウザ内で合成する。音声ファイルはない。ユーザーの操作の後に `Tone.start()` で開始する                                                         |
-| フォントと背景画像   | `public/` に同梱。見出し用フォントは使う8文字だけのサブセット。背景は OpenStreetMap をもとにした画像で、表示中はクレジットを出す                                           |
-| 保存                 | localStorage・Cookie などには何も保存しない。再読み込みで最初から始まる                                                                                                    |
-| 配信                 | `main` への push で GitHub Actions（`.github/workflows/deploy-pages.yml`）がアプリを `/taikutsu/`、このドキュメントを `/taikutsu/docs/` として GitHub Pages へデプロイする |
+| 対象                 | 内容                                                                                                                                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 同梱データ           | `data/specialMoves.json`（スキル）と `data/gameIntros.json`（ゲームとスキルの結びつき）。`src/catalog/` だけが import する。スキルは最初の JS に含め、ゲームのデータはギャラリーのファイルに含めて、戦闘が始まったときに読み込む |
+| ゲーム画像           | 外部のゲーム販売サイトの画像 URL に `?sw=880`（幅880px指定）を付けて `<img>` で読み込む。正面と隣の作品を先に読み込み、それが済んでから残りを読み込む                                                                            |
+| 販売ページへのリンク | `target="_blank" rel="noopener noreferrer"` で新しいタブに開く                                                                                                                                                                   |
+| 効果音               | Tone.js（Web Audio API）でブラウザ内で合成する。音声ファイルはない。Tone.js は効果音をオンにしたときに読み込み、ユーザーの操作の後に `Tone.start()` で開始する                                                                   |
+| フォントと背景画像   | `public/` に同梱。見出し用フォントは使う8文字だけのサブセット。背景は OpenStreetMap をもとにした画像（グレースケール4階調の可逆圧縮 WebP。横並び用に幅 1400px、縦積み用に幅 1000px）で、表示中はクレジットを出す                 |
+| 保存                 | localStorage・Cookie などには何も保存しない。再読み込みで最初から始まる                                                                                                                                                          |
+| 配信                 | `main` への push で GitHub Actions（`.github/workflows/deploy-pages.yml`）がアプリを `/taikutsu/`、このドキュメントを `/taikutsu/docs/` として GitHub Pages へデプロイする                                                       |
 
 ---
 
@@ -289,6 +293,8 @@ sequenceDiagram
 - `HomePage.module.css` は `WorldFrame` より後に読み込みます。 `.galleryWorld` と `.battleWorld` は枠の高さと配置を上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
 - データの整合性を保ちます。 `relatedMoves` の `moveId` は `data/specialMoves.json` に存在する必要があります（ないと推薦時に例外）。各スキルの id には `src/features/commandMenu/data/moveIcons.tsx` のアイコンが必要です（ないと読み込み時に例外）。
 - 見出しの文言を変えたら、フォントのサブセットを作り直します（`src/index.css` のコメント参照）。
+- `tone` と `GameGallery` は静的に import しません。最初の JS に入ると、Tone.js の読み込み時の処理が長いタスクになり、ゲームのデータが JS を大きくします（[品質目標](./quality-targets) §3）。
+- 撃破の後の画面遷移は、ギャラリーの読み込みが終わってから始めます（`HomePage` の `defeated` の effect）。シートが外れたあとにギャラリーがまだない、という状態を作らないためです。
 - 補助的な小さい文字の色には `--color-ink-muted`（`src/styles/tokens.css`）を使います。紙色の背景でコントラスト比 4.5:1 以上を保つ値です。
 - 攻撃のあとスキル一覧の先頭の行へフォーカスを戻すのは、攻撃中のロックが解けて行のボタンが有効に戻ってからです（`useCommandMenuInteraction`）。無効なボタンにはフォーカスできません。
 - ギャラリーの正面のカードはリンク、それ以外のカードはボタンとして描くため、作品を切り替えるとカードの要素が作り直されます。カードにフォーカスがあった切り替えでは、`GalleryCarousel` が新しい正面のカードへフォーカスを移します。
