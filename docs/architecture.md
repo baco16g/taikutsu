@@ -35,7 +35,7 @@
 
 - React 19 と TypeScript で書かれた1ページの Web アプリケーションで、Vite でビルドします。ルートは `/` の1つだけです（react-router-dom、`BrowserRouter` の `basename` は Vite の `BASE_URL`）。
 - アニメーションは GSAP 3（`@gsap/react` の `useGSAP`）で制御します。タ・イクツは SVG で描き、イントロで集まる粒と、タ・イクツが被弾したときに散る破片は canvas で描きます。
-- 効果音は Tone.js でブラウザ内で合成します。
+- 効果音は Tone.js を使ってブラウザ内で合成します。
 - 最初に読み込む JS を小さくするため、ギャラリー（推薦用のゲームのデータを含む）と Tone.js は動的 import で別のファイルに分け、必要になってから読み込みます（§5.2）。
 - スタイルは CSS Modules（クラス名の有効範囲をファイルごとに分ける仕組み）で書き、共通の色などは `src/styles/tokens.css` の CSS 変数にまとめています。
 - 入口は `src/main.tsx` → `src/App.tsx` → `src/pages/HomePage.tsx` です。
@@ -64,7 +64,7 @@ src/
     commandMenu/               スキルを選んで攻撃するメニュー
       hooks/useCommandMenuController   山札（表示中の6つ・使用済み・未表示）と攻撃回数
       hooks/useCommandMenuInteraction  カーソル、攻撃中の入力停止、タッチの2回タップ、矢印キー
-      hooks/useCommandMenuAnimation    DOM の振り付け（選択帯・一覧の表示・アイコンの飛翔）とその DOM ref
+      hooks/useCommandMenuAnimation    DOM のアニメーション（選択帯・一覧の表示・アイコンの飛翔）とその DOM ref
       hooks/useCommandSound            効果音（Tone.js。効果音をオンにしたときに読み込む）
       lib/moves.ts                     山札から引く純粋関数と攻撃上限 ATTACK_LIMIT
     taikutsu/                  タ・イクツの描画（形・テクスチャ・被弾の変形・破片）
@@ -266,7 +266,7 @@ sequenceDiagram
 | 同梱データ           | `data/specialMoves.json`（スキル）と `data/gameIntros.json`（ゲームとスキルの結びつき）。`src/catalog/` だけが import する。スキルは最初の JS に含め、ゲームのデータはギャラリーのファイルに含めて、戦闘が始まったときに読み込む |
 | ゲーム画像           | 外部のゲーム販売サイトの画像 URL に `?sw=880`（幅880px指定）を付けて `<img>` で読み込む。正面と隣の作品を先に読み込み、それが済んでから残りを読み込む                                                                            |
 | 販売ページへのリンク | `target="_blank" rel="noopener noreferrer"` で新しいタブに開く                                                                                                                                                                   |
-| 効果音               | Tone.js（Web Audio API）でブラウザ内で合成する。音声ファイルはない。Tone.js は効果音をオンにしたときに読み込み、ユーザーの操作の後に `Tone.start()` で開始する                                                                   |
+| 効果音               | Tone.js（Web Audio API）を使ってブラウザ内で合成する。音声ファイルはない。Tone.js は効果音をオンにしたときに読み込み、ユーザーの操作の後に `Tone.start()` で開始する                                                             |
 | フォントと背景画像   | `public/` に同梱。見出し用フォントは使う8文字だけのサブセット。背景は OpenStreetMap をもとにした画像（グレースケール4階調の可逆圧縮 WebP。横並び用に幅 1400px、縦積み用に幅 1000px）で、表示中はクレジットを出す                 |
 | 保存                 | localStorage・Cookie などには何も保存しない。再読み込みで最初から始まる                                                                                                                                                          |
 | 配信                 | `main` への push で GitHub Actions（`.github/workflows/deploy-pages.yml`）がアプリを `/taikutsu/`、このドキュメントを `/taikutsu/docs/` として GitHub Pages へデプロイする                                                       |
@@ -280,7 +280,7 @@ sequenceDiagram
 - 構成は機能ごとのフォルダに分けるだけにしています。実質1画面のアプリなので、層を重ねた構成にはしていません。機能どうしの依存の向きは §2.2 のとおりです。
 - 進行の状態は、イントロのフェーズと進行段階の2つに分けています。イントロのフェーズは GSAP の移動の演出と密に結びついているため `useIntroPhase` が持ち、撃破からギャラリーまでの進行は `HomePage` が `SessionStage` 1つで持ちます。表示と読み上げはこの2つから導き、別の state として持ちません。
 - タ・イクツの被弾は、React の状態に合わせて命令的なアニメーションを動かす形にしています。着弾は `landedMoves` に記録し、その長さが増えたことを effect で検知して `attack()` を呼びます。
-- スキル一覧の操作と振り付けを分けています。`useCommandMenuInteraction` は DOM に触れず、カーソルや攻撃中のロックといった操作のルールだけを扱い、行番号で `useCommandMenuAnimation` に指示します。DOM の ref は、それを直接操作する `useCommandMenuAnimation` が持ちます。
+- スキル一覧の操作とアニメーションを分けています。`useCommandMenuInteraction` は DOM に触れず、カーソルや攻撃中のロックといった操作のルールだけを扱い、行番号で `useCommandMenuAnimation` に指示します。DOM の ref は、それを直接操作する `useCommandMenuAnimation` が持ちます。
 
 ### 6.2 守るべき制約
 
