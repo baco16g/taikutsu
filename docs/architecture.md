@@ -65,7 +65,7 @@ src/
       hooks/useCommandMenuController   山札（表示中の6つ・使用済み・未表示）と攻撃回数
       hooks/useCommandMenuInteraction  カーソル、攻撃中の入力停止、タッチの2回タップ、矢印キー
       hooks/useCommandMenuAnimation    DOM の振り付け（選択帯・一覧の表示・アイコンの飛翔）とその DOM ref
-      hooks/useCommandSound            効果音（Tone.js）
+      hooks/useCommandSound            効果音（Tone.js。効果音をオンにしたときに読み込む）
       lib/moves.ts                     山札から引く純粋関数と攻撃上限 ATTACK_LIMIT
     taikutsu/                  タ・イクツの描画（形・テクスチャ・被弾の変形・破片）
       data/creatureProfile.ts  肩書きと名前（イントロと戦闘の両方で表示）
@@ -132,6 +132,7 @@ graph TD
 - 機能どうしの import は、画面を組み立てる `battle` と `intro` から、部品にあたる `commandMenu` と `taikutsu` へ向かうものだけです。`gallery` と `reveal` は他の機能に依存しません。
 - `pages/HomePage` は、イントロのホバー音のために `commandMenu` の効果音 hook を、タ・イクツの操作のために `taikutsu` の型を直接使います。
 - JSON データを import するのは `src/catalog/` の2ファイルだけです。
+- ギャラリーの本体（`gallery/components/GameGallery`。ゲームのデータを含む）と Tone.js は、動的 import で別のファイルに分けています。`HomePage` が静的に import するのは、読み込みを管理する `useLazyGameGallery` と `GalleryLoadError` だけです。
 
 ---
 
@@ -276,22 +277,22 @@ sequenceDiagram
 
 ### 6.1 設計上の判断
 
-- 構成は機能ごとのフォルダに分けるだけにしています。 実質1画面のアプリなので、層を重ねた構成にはしていません。機能どうしの依存の向きは §2.2 のとおりです。
-- 進行の状態は、イントロのフェーズと進行段階の2つに分けています。 イントロのフェーズは GSAP の移動の演出と密に結びついているため `useIntroPhase` が持ち、撃破からギャラリーまでの進行は `HomePage` が `SessionStage` 1つで持ちます。表示と読み上げはこの2つから導き、別の state として持ちません。
-- タ・イクツの被弾は、React の状態に合わせて命令的なアニメーションを動かす形にしています。 着弾は `landedMoves` に記録し、その長さが増えたことを effect で検知して `attack()` を呼びます。
-- スキル一覧の操作と振り付けを分けています。 `useCommandMenuInteraction` は DOM に触れず、カーソルや攻撃中のロックといった操作のルールだけを扱い、行番号で `useCommandMenuAnimation` に指示します。DOM の ref は、それを直接操作する `useCommandMenuAnimation` が持ちます。
+- 構成は機能ごとのフォルダに分けるだけにしています。実質1画面のアプリなので、層を重ねた構成にはしていません。機能どうしの依存の向きは §2.2 のとおりです。
+- 進行の状態は、イントロのフェーズと進行段階の2つに分けています。イントロのフェーズは GSAP の移動の演出と密に結びついているため `useIntroPhase` が持ち、撃破からギャラリーまでの進行は `HomePage` が `SessionStage` 1つで持ちます。表示と読み上げはこの2つから導き、別の state として持ちません。
+- タ・イクツの被弾は、React の状態に合わせて命令的なアニメーションを動かす形にしています。着弾は `landedMoves` に記録し、その長さが増えたことを effect で検知して `attack()` を呼びます。
+- スキル一覧の操作と振り付けを分けています。`useCommandMenuInteraction` は DOM に触れず、カーソルや攻撃中のロックといった操作のルールだけを扱い、行番号で `useCommandMenuAnimation` に指示します。DOM の ref は、それを直接操作する `useCommandMenuAnimation` が持ちます。
 
 ### 6.2 守るべき制約
 
-- タ・イクツは `HomePage` で1体だけ描画します。 各画面は立ち位置の目印（`creatureDockRef`）だけを持ちます。画面の中で描画すると切り替えのたびに再マウントされ、呼吸の動きやテクスチャが途切れます。
+- タ・イクツは `HomePage` で1体だけ描画します。各画面は立ち位置の目印（`creatureDockRef`）だけを持ちます。画面の中で描画すると切り替えのたびに再マウントされ、呼吸の動きやテクスチャが途切れます。
 - 戦闘画面のセクションは `position: static` のままにします（`src/pages/HomePage.module.css` の `.battleSection`）。見出しと HP の列は枠（World Container）を基準に絶対配置され、`useIntroPhase` も同じ要素を基準に目印の位置を測っています。
 - 横並びの戦闘画面では、スキル一覧だけを通常の配置（下寄せ）にします（`.battleWorld` と `src/features/battle/components/BattleScreen.module.css` の `.commandAnchor`）。一覧が既定の高さに収まらないときは枠を下へ伸ばし、枠の上端は既定の高さで縦中央に置いたときの位置に固定します。HP の列は、枠の実際の高さではなく既定の高さ `--world-default-height`（`src/components/WorldFrame/WorldFrame.module.css`）を基準に置くので、枠が伸びてもタ・イクツは動きません。一覧を絶対配置にすると、横に広いわりに背の低い画面で枠の上へはみ出します。
-- `RevealTransition` の `onCovered` の中では、ギャラリーへの差し替えを `flushSync` で同期的に commit します。 シートはこの呼び出しが戻った直後に外れ始めます。
-- 「5」という数はまとめて変えます。 攻撃上限 `ATTACK_LIMIT`（`src/features/commandMenu/lib/moves.ts`）、タ・イクツの形の段階 `HP_SHAPES`（`src/features/taikutsu/lib/shapeStates.ts`、HP5〜0）、推薦の strong-tie 枠 `STRONG_TIE_TARGET`（`src/features/gallery/lib/recommend.ts`）、イントロの文言「スキルを5つ選んで」（`src/features/intro/data/introCopy.ts`）、当たった音の5段階（`src/features/commandMenu/hooks/useCommandSound.ts`）は連動しています。このうち `ATTACK_LIMIT` と `HP_SHAPES` の一致は `src/features/battle/hpInvariant.test.ts` で確かめています。ほかの3つの一致はテストしていません。
-- 着弾が1つ増えるごとに `attack()` を1回呼びます。 `attack()` は前の被弾の変形が再生中ならそれを最後まで進めてから次を始めるので、呼んだ回数だけ HP が1段階ずつ進みます。
-- フォーカスの移動先の id（`intro-battle-title`、`gallery-heading-title`）と、スクロールを止める対象の目印 `data-scroll-root` は変えません。 `HomePage` と `RevealTransition` が参照しています。
-- `HomePage.module.css` は `WorldFrame` より後に読み込みます。 `.galleryWorld` と `.battleWorld` は枠の高さと配置を上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
-- データの整合性を保ちます。 `relatedMoves` の `moveId` は `data/specialMoves.json` に存在する必要があります（ないと推薦時に例外）。各スキルの id には `src/features/commandMenu/data/moveIcons.tsx` のアイコンが必要です（ないと読み込み時に例外）。
+- `RevealTransition` の `onCovered` の中では、ギャラリーへの差し替えを `flushSync` で同期的に commit します。シートはこの呼び出しが戻った直後に外れ始めます。
+- 「5」という数はまとめて変えます。攻撃上限 `ATTACK_LIMIT`（`src/features/commandMenu/lib/moves.ts`）、タ・イクツの形の段階 `HP_SHAPES`（`src/features/taikutsu/lib/shapeStates.ts`、HP5〜0）、推薦の strong-tie 枠 `STRONG_TIE_TARGET`（`src/features/gallery/lib/recommend.ts`）、イントロの文言「スキルを5つ選んで」（`src/features/intro/data/introCopy.ts`）、当たった音の5段階（`src/features/commandMenu/hooks/useCommandSound.ts`）は連動しています。このうち `ATTACK_LIMIT` と `HP_SHAPES` の一致は `src/features/battle/hpInvariant.test.ts` で確かめています。ほかの3つの一致はテストしていません。
+- 着弾が1つ増えるごとに `attack()` を1回呼びます。`attack()` は前の被弾の変形が再生中ならそれを最後まで進めてから次を始めるので、呼んだ回数だけ HP が1段階ずつ進みます。
+- フォーカスの移動先の id（`intro-battle-title`、`gallery-heading-title`）と、スクロールを止める対象の目印 `data-scroll-root` は変えません。`HomePage` と `RevealTransition` が参照しています。`GalleryLoadError` の見出しも、ギャラリーと同じ `gallery-heading-title` にしています。
+- `HomePage.module.css` は `WorldFrame` より後に読み込みます。`.galleryWorld` と `.battleWorld` は枠の高さと配置を上書きするため、CSS の順序に依存しています（`HomePage.tsx` の import の順で決まります）。
+- データの整合性を保ちます。`relatedMoves` の `moveId` は `data/specialMoves.json` に存在する必要があります（ないと推薦時に例外）。各スキルの id には `src/features/commandMenu/data/moveIcons.tsx` のアイコンが必要です（ないと読み込み時に例外）。
 - 見出しの文言を変えたら、フォントのサブセットを作り直します（`src/index.css` のコメント参照）。
 - `tone` と `GameGallery` は静的に import しません。最初の JS に入ると、Tone.js の読み込み時の処理が長いタスクになり、ゲームのデータが JS を大きくします（[品質目標](./quality-targets) §3）。
 - 撃破の後の画面遷移は、ギャラリーの読み込みが終わってから始めます（`HomePage` の `defeated` の effect）。シートが外れたあとにギャラリーがまだない、という状態を作らないためです。
@@ -299,4 +300,4 @@ sequenceDiagram
 - 攻撃のあとスキル一覧の先頭の行へフォーカスを戻すのは、攻撃中のロックが解けて行のボタンが有効に戻ってからです（`useCommandMenuInteraction`）。無効なボタンにはフォーカスできません。
 - ギャラリーの正面のカードはリンク、それ以外のカードはボタンとして描くため、作品を切り替えるとカードの要素が作り直されます。カードにフォーカスがあった切り替えでは、`GalleryCarousel` が新しい正面のカードへフォーカスを移します。
 - 本番ビルドと `vite preview` のパスは `/taikutsu/` です（`vite.config.ts`）。ドキュメントサイトは `/taikutsu/docs/` です（`docs/.vitepress/config.ts`）。
-- `useGSAP` の `contextSafe()` は呼ぶたびに新しい関数を返します。 これに依存する effect は毎レンダー再実行されます（今はリサイズ時の帯の補正の購読がこれに当たります）。ループし続けるアニメーションは、この種の関数に依存させないでください。
+- `useGSAP` の `contextSafe()` は呼ぶたびに新しい関数を返します。これに依存する effect は毎レンダー再実行されます（今はリサイズ時の帯の補正の購読がこれに当たります）。ループし続けるアニメーションは、この種の関数に依存させないでください。
