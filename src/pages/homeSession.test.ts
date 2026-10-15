@@ -45,4 +45,13 @@ describe('deriveSessionView', () => {
     }
     expect(deriveSessionView('battle', 'gallery').announcement).toBe(ANNOUNCEMENTS.galleryShown)
   })
+
+  it('announces the load failure instead of the gallery when the gallery could not be loaded', () => {
+    expect(deriveSessionView('battle', 'uncovering', true).announcement).toBe(
+      ANNOUNCEMENTS.defeated,
+    )
+    expect(deriveSessionView('battle', 'gallery', true).announcement).toBe(
+      ANNOUNCEMENTS.galleryFailed,
+    )
+  })
 })

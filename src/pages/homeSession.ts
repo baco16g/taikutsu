@@ -5,7 +5,7 @@ import type { IntroPhase } from '../features/intro/hooks/useIntroPhase'
  * 進行段階。イントロ内のフェーズ（登場〜戦闘位置への移動）はuseIntroPhaseが持つ。
  *
  * - `undefeated`: まだ倒していない（イントロ中も含む）
- * - `defeated`: 倒した。破片を見せながらDEFEAT_HOLD_MSだけ待つ
+ * - `defeated`: 倒した。破片を見せながら、DEFEAT_HOLD_MSとギャラリーの読み込みの両方を待つ
  * - `covering`: 画面遷移のシートが戦闘画面を覆っていく
  * - `uncovering`: 覆った裏でギャラリーに差し替え済み。シートが外れていく
  * - `gallery`: ギャラリーを操作できる
@@ -19,6 +19,7 @@ export const ANNOUNCEMENTS = {
   appeared: 'タ・イクツが現れました。スキルを選んでください。',
   defeated: 'タ・イクツを倒した。退屈の向こうに、まだ知らない遊びがある。',
   galleryShown: 'タ・イクツを撃破しました。ゲームギャラリーを表示しています。',
+  galleryFailed: 'ゲームの一覧を読み込めませんでした。',
 }
 
 export interface SessionView {
@@ -35,8 +36,15 @@ export interface SessionView {
   announcement: string
 }
 
-/** イントロのフェーズと進行段階から、どの画面を表示し何を読み上げるかを決める。 */
-export function deriveSessionView(introPhase: IntroPhase, stage: SessionStage): SessionView {
+/**
+ * イントロのフェーズと進行段階から、どの画面を表示し何を読み上げるかを決める。
+ * `galleryFailed`は、ギャラリーを読み込めず代わりにエラーを表示しているか。
+ */
+export function deriveSessionView(
+  introPhase: IntroPhase,
+  stage: SessionStage,
+  galleryFailed = false,
+): SessionView {
   const revealActive = stage === 'covering' || stage === 'uncovering'
   return {
     showIntro: introPhase === 'arrival' || introPhase === 'ready' || introPhase === 'depart',
@@ -47,11 +55,15 @@ export function deriveSessionView(introPhase: IntroPhase, stage: SessionStage): 
     battleInert: introPhase !== 'battle' || revealActive,
     defeated: stage !== 'undefeated',
     revealActive,
-    announcement: announcementFor(introPhase, stage),
+    announcement: announcementFor(introPhase, stage, galleryFailed),
   }
 }
 
-function announcementFor(introPhase: IntroPhase, stage: SessionStage): string {
+function announcementFor(
+  introPhase: IntroPhase,
+  stage: SessionStage,
+  galleryFailed: boolean,
+): string {
   switch (stage) {
     case 'undefeated':
       return introPhase === 'battle' ? ANNOUNCEMENTS.appeared : ''
@@ -60,6 +72,6 @@ function announcementFor(introPhase: IntroPhase, stage: SessionStage): string {
     case 'uncovering':
       return ANNOUNCEMENTS.defeated
     case 'gallery':
-      return ANNOUNCEMENTS.galleryShown
+      return galleryFailed ? ANNOUNCEMENTS.galleryFailed : ANNOUNCEMENTS.galleryShown
   }
 }

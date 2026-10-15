@@ -12,7 +12,8 @@ import { useIntroPhase } from '../features/intro/hooks/useIntroPhase'
 import type { TaikutsuCreatureHandle } from '../features/taikutsu/components/TaikutsuCreature'
 import type { Hp } from '../features/taikutsu/lib/shapeStates'
 import { RevealTransition } from '../features/reveal/components/RevealTransition'
-import { GameGallery } from '../features/gallery/components/GameGallery'
+import { GalleryLoadError } from '../features/gallery/components/GalleryLoadError'
+import { useLazyGameGallery } from '../features/gallery/hooks/useLazyGameGallery'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { useSupportsHover } from '../hooks/useSupportsHover'
 import { DEFEAT_HOLD_MS, deriveSessionView, type SessionStage } from './homeSession'
@@ -52,7 +53,14 @@ export function HomePage() {
   }, [])
 
   const intro = useIntroPhase({ reducedMotion, onArrived: handleArrived })
-  const view = deriveSessionView(intro.phase, stage)
+  const gallery = useLazyGameGallery()
+  const { load: loadGallery } = gallery
+  const view = deriveSessionView(intro.phase, stage, gallery.state.status === 'failed')
+
+  // ギャラリーは最初に読み込むJSから分けてあるので、戦闘が始まったら裏で読み込んでおく。
+  useEffect(() => {
+    if (view.showBattleSection) void loadGallery()
+  }, [view.showBattleSection, loadGallery])
 
   const handleImpact = (move: LandedMove) => {
     setLandedMoves((moves) => [...moves, move])
@@ -72,11 +80,23 @@ export function HomePage() {
     if (hp === 0) setStage((current) => (current === 'undefeated' ? 'defeated' : current))
   }
 
+  // 破片を見せる時間が過ぎ、ギャラリーの読み込みも終わって（失敗も含む）から覆い始める。
+  // 読み込みに失敗したときは、ギャラリーの代わりにエラーを表示する。
   useEffect(() => {
     if (stage !== 'defeated') return
-    const timer = setTimeout(() => setStage('covering'), DEFEAT_HOLD_MS)
-    return () => clearTimeout(timer)
-  }, [stage])
+    let cancelled = false
+    let timer = 0
+    const hold = new Promise<void>((resolve) => {
+      timer = window.setTimeout(resolve, DEFEAT_HOLD_MS)
+    })
+    void Promise.all([hold, loadGallery()]).then(() => {
+      if (!cancelled) setStage('covering')
+    })
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [stage, loadGallery])
 
   // RevealTransitionはこの呼び出しが戻った直後にシートを外し始めるため、
   // ギャラリーへの差し替えをflushSyncで同期的にcommitしておく。
@@ -97,6 +117,8 @@ export function HomePage() {
     setStage('undefeated')
     intro.resetIntro()
   }
+
+  const LoadedGameGallery = gallery.state.status === 'ready' ? gallery.state.GameGallery : null
 
   return (
     <>
@@ -156,13 +178,16 @@ export function HomePage() {
               />
             )}
 
-            {view.showGallery && (
-              <GameGallery
-                reducedMotion={reducedMotion}
-                chosenMoves={landedMoves}
-                onReplay={handleReplay}
-              />
-            )}
+            {view.showGallery &&
+              (LoadedGameGallery ? (
+                <LoadedGameGallery
+                  reducedMotion={reducedMotion}
+                  chosenMoves={landedMoves}
+                  onReplay={handleReplay}
+                />
+              ) : (
+                <GalleryLoadError />
+              ))}
           </section>
         )}
 
