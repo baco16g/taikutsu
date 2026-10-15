@@ -1,5 +1,28 @@
 import { useCallback, useEffect, useRef } from 'react'
-import * as Tone from 'tone'
+import type * as Tone from 'tone'
+
+type ToneModule = typeof Tone
+
+// Tone.jsは読み込んだ時点でAudioContextの準備などの重い処理をする。効果音は
+// 初期状態でオフなので、オンにされたときに初めて読み込み、ページを開いた
+// 直後の処理を軽くする。
+let loadedTone: ToneModule | null = null
+let loadingTone: Promise<ToneModule | null> | null = null
+
+function loadTone(): Promise<ToneModule | null> {
+  loadingTone ??= import('tone').then(
+    (tone) => {
+      loadedTone = tone
+      return tone
+    },
+    () => {
+      // 読み込みに失敗したら無音のままにし、次に鳴らすときに読み込み直す。
+      loadingTone = null
+      return null
+    },
+  )
+  return loadingTone
+}
 
 interface Synths {
   move: Tone.Synth
@@ -63,31 +86,31 @@ export function useCommandSound(enabled: boolean) {
   const synthsRef = useRef<Synths | null>(null)
   const startedRef = useRef(false)
 
-  const ensureStarted = useCallback(async () => {
+  const ensureStarted = useCallback(async (tone: ToneModule) => {
     if (startedRef.current) return
     try {
-      await Tone.start()
+      await tone.start()
       startedRef.current = true
     } catch {
       // まだユーザー操作がない、またはオーディオが利用不可 — 無音のままにする。
     }
   }, [])
 
-  const ensureSynths = useCallback((): Synths => {
+  const ensureSynths = useCallback((tone: ToneModule): Synths => {
     if (synthsRef.current) return synthsRef.current
-    const move = new Tone.Synth({
+    const move = new tone.Synth({
       oscillator: { type: 'square' },
       envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
     }).toDestination()
     move.volume.value = -16
 
-    const attack = new Tone.MembraneSynth({
+    const attack = new tone.MembraneSynth({
       octaves: 3,
       envelope: { attack: 0.001, decay: 0.22, sustain: 0 },
     }).toDestination()
     attack.volume.value = -6
 
-    const hit = new Tone.NoiseSynth({
+    const hit = new tone.NoiseSynth({
       noise: { type: 'white' },
       envelope: { attack: 0.001, decay: 0.14, sustain: 0 },
     }).toDestination()
@@ -96,7 +119,7 @@ export function useCommandSound(enabled: boolean) {
     // 'triangle'にしている（move自身の波形'square'でもMembraneSynth
     // （attackのもの）でもなく）— hitのノイズバーストと一緒に鳴ったときに
     // 埋もれない、3つ目の独立した音色にするため。
-    const hitTone = new Tone.Synth({
+    const hitTone = new tone.Synth({
       oscillator: { type: 'triangle' },
       envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.08 },
     }).toDestination()
@@ -105,6 +128,11 @@ export function useCommandSound(enabled: boolean) {
     synthsRef.current = { move, attack, hit, hitTone }
     return synthsRef.current
   }, [])
+
+  // オンにされた時点で読み込みを始め、最初の効果音が遅れないようにする。
+  useEffect(() => {
+    if (enabled) void loadTone()
+  }, [enabled])
 
   useEffect(
     () => () => {
@@ -121,10 +149,14 @@ export function useCommandSound(enabled: boolean) {
     (fn: (s: Synths) => void) => {
       if (!enabled) return
       void (async () => {
-        await ensureStarted()
+        // 読み込み済みなら待たずに進み、ユーザー操作のイベント処理の中で
+        // Tone.start()を呼ぶ（自動再生の制限が厳しいブラウザ向け）。
+        const tone = loadedTone ?? (await loadTone())
+        if (!tone) return
+        await ensureStarted(tone)
         if (!startedRef.current) return
         try {
-          fn(ensureSynths())
+          fn(ensureSynths(tone))
         } catch {
           // 再生の失敗が戦闘フローを止めることは絶対にあってはならない。
         }
