@@ -42,7 +42,10 @@
   position: absolute;
   inset: 22px 0 0 44px;
   z-index: -1;
-  background-image: url('/backgrounds/shibuya-scramble.webp');
+  /* 線画をグレースケールの4階調に減らした可逆圧縮のWebP。薄く重ねるだけなので
+     見た目はほぼ変わらず、データ量は元の画像の半分以下になる。縦積みの
+     レイアウトでは幅1000pxの版（下の@container）を使う。 */
+  background-image: url('/backgrounds/shibuya-scramble-1400.webp');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -314,6 +317,7 @@
      フレーム自身のより小さいモバイル用コーナーカットに合わせている。 */
   .introGrid::before {
     inset: 16px 0 0 26px;
+    background-image: url('/backgrounds/shibuya-scramble-1000.webp');
     opacity: 0.24;
     mask-image: radial-gradient(ellipse 95% 31% at 50% 41%, #000 0%, #000 55%, transparent 100%);
     -webkit-mask-image: radial-gradient(
